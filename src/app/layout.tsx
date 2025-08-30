@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { UserProvider } from "@/contexts/UserContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -13,10 +14,10 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "My Diary - Capture Your Thoughts",
-  description: "A beautiful digital diary to capture your daily thoughts, memories, and experiences.",
-  keywords: "diary, journal, personal, thoughts, memories",
-  authors: [{ name: "Diary App" }],
+  title: "Write-it - Develop Your Writing Skills",
+  description: "A powerful writing platform designed to help you develop your writing skills and enhance your thinking through daily practice.",
+  keywords: "writing, journal, personal, thoughts, skills, practice",
+  authors: [{ name: "Write-it App" }],
 };
 
 export default function RootLayout({
@@ -29,7 +30,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${playfair.variable} antialiased bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen`}
       >
-        {children}
+        <UserProvider>
+          {children}
+        </UserProvider>
       </body>
     </html>
   );
