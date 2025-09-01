@@ -289,7 +289,7 @@ export async function generateAISuggestions(
         messages: [
           {
             role: 'system',
-                            content: `You are an expert writing coach and journaling specialist. Your job is to generate personalized writing prompts and suggestions for users based on their writing history and preferences.
+            content: `You are an expert writing coach and journaling specialist. Your job is to generate personalized writing prompts and suggestions for users based on their writing history and preferences.
 
 Generate 1 high-quality writing suggestion that is:
 1. Personalized to the user's writing style and patterns
@@ -297,7 +297,10 @@ Generate 1 high-quality writing suggestion that is:
 3. Perfectly suited to their current writing level and preferences
 4. Engaging and inspiring
 5. Specific enough to be actionable
-6. The best possible suggestion for this user and topic
+6. DIFFERENT from previous suggestions - be creative and varied
+7. The best possible suggestion for this user and topic
+
+IMPORTANT: Each time you generate a suggestion, make it unique and different. Vary the approach, angle, perspective, or focus area. Don't repeat similar suggestions.
 
 The suggestion should include:
 - A compelling title
@@ -315,7 +318,7 @@ Format your response as a JSON array with exactly one suggestion object.`
             content: context
           }
         ],
-        temperature: 0.7,
+        temperature: 0.9,
         max_tokens: 1500
       })
     });
@@ -384,7 +387,10 @@ Description: ${topicDescription}
 Recent entries (for context):
 ${recentContent || 'No recent entries'}
 
-Please generate personalized writing suggestions for this user and topic.`;
+Request timestamp: ${new Date().toISOString()}
+Random seed: ${Math.random().toString(36).substring(2, 15)}
+
+Please generate a UNIQUE and DIFFERENT personalized writing suggestion for this user and topic. Make it creative and varied from previous suggestions.`;
 }
 
 // Fallback suggestions when AI is not available

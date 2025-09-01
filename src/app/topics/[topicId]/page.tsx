@@ -165,8 +165,9 @@ export default function TopicPage({ params }: TopicPageProps) {
     if (!topic || !user) return [];
 
     try {
-      // Call the AI suggestions API
-      const response = await fetch(`/api/ai-suggestions?userId=${user.id}&topicTitle=${encodeURIComponent(topic.title)}&topicDescription=${encodeURIComponent(topic.description)}`);
+      // Call the AI suggestions API with cache-busting
+      const timestamp = Date.now();
+      const response = await fetch(`/api/ai-suggestions?userId=${user.id}&topicTitle=${encodeURIComponent(topic.title)}&topicDescription=${encodeURIComponent(topic.description)}&_t=${timestamp}`);
       
       if (response.ok) {
         const data = await response.json();
