@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:Query",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Scan",
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:*:table/diary-users",
+        "arn:aws:dynamodb:us-east-1:*:table/diary-users/index/*",
+        "arn:aws:dynamodb:us-east-1:*:table/diary-topics",
+        "arn:aws:dynamodb:us-east-1:*:table/diary-topics/index/*",
+        "arn:aws:dynamodb:us-east-1:*:table/diary-entries",
+        "arn:aws:dynamodb:us-east-1:*:table/diary-entries/index/*"
+      ]
+    }
+  ]
+}

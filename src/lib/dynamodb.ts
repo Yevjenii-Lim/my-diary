@@ -5,10 +5,13 @@ import { User, UserTopic, DiaryEntry } from '@/types/database';
 // Initialize DynamoDB client
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-  },
+  // Use IAM role when deployed, fallback to credentials for local development
+  ...(process.env.NODE_ENV === 'production' ? {} : {
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+    },
+  }),
 });
 
 const docClient = DynamoDBDocumentClient.from(client);
