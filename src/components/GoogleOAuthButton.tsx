@@ -24,7 +24,7 @@ export default function GoogleOAuthButton({ variant, className = '' }: GoogleOAu
       const redirectUri = `${currentOrigin}/api/auth/google/callback`;
       console.log('🔄 Current origin:', currentOrigin);
       console.log('🔄 Using redirect URI:', redirectUri);
-      console.log('🔄 NEXTAUTH_URL from env:', process.env.NEXTAUTH_URL);
+      console.log('🔄 Note: NEXTAUTH_URL is server-side only, using currentOrigin instead');
       
       const params = new URLSearchParams({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
