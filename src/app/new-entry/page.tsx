@@ -380,7 +380,7 @@ export default function NewEntry() {
                               e.stopPropagation();
                               setDeleteModal({ show: true, topic });
                             }}
-                            className="text-red-500 hover:text-red-700 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="text-red-500 hover:text-red-700 text-sm font-medium sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                             title="Remove topic"
                           >
                             🗑️ Remove

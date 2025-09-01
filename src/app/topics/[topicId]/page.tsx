@@ -907,19 +907,19 @@ export default function TopicPage({ params }: TopicPageProps) {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Average entries per week:</span>
-                      <span className="font-medium">{topicStats.averageEntriesPerWeek}</span>
+                      <span className="font-medium text-gray-900">{topicStats.averageEntriesPerWeek}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Most active day:</span>
-                      <span className="font-medium">{topicStats.mostActiveDay || 'N/A'}</span>
+                      <span className="font-medium text-gray-900">{topicStats.mostActiveDay || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Longest streak:</span>
-                      <span className="font-medium">{topicStats.longestStreak} days</span>
+                      <span className="font-medium text-gray-900">{topicStats.longestStreak} days</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Last entry:</span>
-                      <span className="font-medium">
+                      <span className="font-medium text-gray-900">
                         {topicStats.lastEntryDate ? 
                           new Date(topicStats.lastEntryDate).toLocaleDateString() : 
                           'Never'

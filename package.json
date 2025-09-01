@@ -14,6 +14,7 @@
     "@aws-sdk/client-dynamodb": "^3.876.0",
     "@aws-sdk/lib-dynamodb": "^3.876.0",
     "dotenv": "^17.2.1",
+    "google-auth-library": "^10.3.0",
     "next": "15.5.2",
     "react": "19.1.0",
     "react-dom": "19.1.0"

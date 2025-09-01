@@ -9,6 +9,7 @@ interface UserContextType {
   userTopics: UserTopic[];
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (userData: User) => Promise<void>;
   logout: () => void;
   addUserTopic: (topic: Omit<UserTopic, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   refreshTopics: () => Promise<void>;
@@ -26,6 +27,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // Load authenticated user data
     const loadUser = async () => {
       setIsLoading(true);
+      
+      // Check for Google user in localStorage first
+      const googleUserData = localStorage.getItem('googleUser');
+      
+      if (googleUserData) {
+        try {
+          const googleUser = JSON.parse(googleUserData);
+          setUser(googleUser);
+          await refreshTopics(googleUser);
+          setIsLoading(false);
+          return;
+        } catch (error) {
+          console.error('❌ UserContext: Error parsing Google user from localStorage:', error);
+          localStorage.removeItem('googleUser');
+        }
+      }
       
       const authenticated = isAuthenticated();
       
@@ -51,12 +68,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
           // Error loading authenticated user
           logout();
         }
-      }
-      
-      setIsLoading(false);
+              }
+        
+        setIsLoading(false);
     };
 
     loadUser();
+
+    // Set up periodic token refresh (every 6 hours)
+    const tokenRefreshInterval = setInterval(async () => {
+      if (isAuthenticated()) {
+        try {
+          await ensureValidToken();
+        } catch (error) {
+          console.log('Periodic token refresh failed:', error);
+        }
+      }
+    }, 6 * 60 * 60 * 1000); // 6 hours
+
+    return () => {
+      clearInterval(tokenRefreshInterval);
+    };
   }, []);
 
   // Add a second useEffect to handle cases where the first one doesn't trigger
@@ -95,8 +127,36 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (userData: User) => {
+    try {
+      console.log('🔄 Logging in Google user:', userData.email);
+      console.log('📋 User data being set:', userData);
+      
+      // Store Google user in localStorage for persistence
+      localStorage.setItem('googleUser', JSON.stringify(userData));
+      console.log('💾 Google user stored in localStorage');
+      
+      // Set the user in context
+      setUser(userData);
+      console.log('✅ User state updated in context');
+      
+      // Load user topics
+      console.log('🔄 Loading user topics...');
+      await refreshTopics(userData);
+      console.log('✅ User topics loaded');
+      
+      console.log('✅ Google user logged in successfully');
+      console.log('🔄 Current user state:', userData);
+    } catch (error) {
+      console.error('❌ Error logging in Google user:', error);
+      throw error;
+    }
+  };
+
   const logout = () => {
     cognitoSignOut();
+    // Clear Google user data
+    localStorage.removeItem('googleUser');
     setUser(null);
     setUserTopics([]);
   };
@@ -169,6 +229,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     userTopics,
     isLoading,
     login,
+    loginWithGoogle,
     logout,
     addUserTopic,
     refreshTopics,

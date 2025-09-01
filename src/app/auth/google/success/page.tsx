@@ -1,0 +1,120 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useUser } from '@/contexts/UserContext';
+
+export default function GoogleAuthSuccess() {
+  const router = useRouter();
+  const { user, loginWithGoogle } = useUser();
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const processGoogleAuth = async () => {
+      try {
+        // Check if we have Google user info
+        const googleUserInfoCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('google_user_info='));
+        
+        if (!googleUserInfoCookie) {
+          setError('Google authentication information not found');
+          setIsProcessing(false);
+          return;
+        }
+
+        const googleUserInfo = JSON.parse(decodeURIComponent(googleUserInfoCookie.split('=')[1]));
+        
+        console.log('✅ Google authentication successful for:', googleUserInfo.email);
+
+        // Check if user exists in our system
+        const response = await fetch(`/api/users/google?email=${encodeURIComponent(googleUserInfo.email)}`);
+        
+        if (response.ok) {
+          // User exists, get their data
+          const userData = await response.json();
+          console.log('✅ Existing user found:', userData.user.email);
+          
+          // Log in the existing Google user
+          try {
+            console.log('🔄 Logging in existing Google user...');
+            await loginWithGoogle(userData.user);
+            console.log('✅ Existing Google user logged in successfully');
+            
+            // Redirect to main app
+            router.push('/new-entry');
+          } catch (loginError) {
+            console.error('❌ Error logging in existing Google user:', loginError);
+            setError('Failed to log in existing user');
+            setIsProcessing(false);
+            return;
+          }
+        } else if (response.status === 404) {
+          // User doesn't exist, redirect to complete profile
+          console.log('🆕 New Google user, redirecting to profile completion');
+          router.push(`/auth/google/complete-profile?email=${encodeURIComponent(googleUserInfo.email)}&name=${encodeURIComponent(googleUserInfo.name)}`);
+        } else {
+          throw new Error('Failed to check user existence');
+        }
+
+      } catch (error) {
+        console.error('❌ Error processing Google authentication:', error);
+        setError('Failed to complete Google authentication');
+        setIsProcessing(false);
+      }
+    };
+
+    processGoogleAuth();
+  }, [router]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="text-center">
+            <Link href="/" className="text-3xl font-playfair font-bold text-gray-900">
+              Write-it
+            </Link>
+            <h2 className="mt-6 text-3xl font-bold text-gray-900">
+              Authentication Error
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              {error}
+            </p>
+            <div className="mt-6">
+              <Link
+                href="/auth/signin"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Try Again
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="text-center">
+          <Link href="/" className="text-3xl font-playfair font-bold text-gray-900">
+            Write-it
+          </Link>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+            Completing Authentication
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Please wait while we complete your Google sign-in...
+          </p>
+          <div className="mt-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

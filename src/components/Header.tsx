@@ -1,38 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
-import { getCurrentUser, signOut, isAuthenticated } from '@/lib/cognito';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  emailVerified: boolean;
-}
+import { useState, useRef, useEffect } from 'react';
+import { useUser } from '@/contexts/UserContext';
 
 export default function Header() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading, logout } = useUser();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        if (isAuthenticated()) {
-          const currentUser = await getCurrentUser();
-          setUser(currentUser);
-        }
-      } catch (error) {
-        console.error('Error loading user:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    loadUser();
-  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -52,11 +29,8 @@ export default function Header() {
   }, [isDropdownOpen]);
 
   const handleSignOut = () => {
-    signOut();
-    setUser(null);
+    logout();
     setIsDropdownOpen(false);
-    // Optionally redirect to home page
-    window.location.href = '/';
   };
 
   const toggleDropdown = () => {
