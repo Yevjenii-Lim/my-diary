@@ -9,10 +9,12 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🔄 Exchanging Google authorization code for tokens...');
+    const redirectUri = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/google/callback`;
     console.log('📋 Token exchange parameters:');
     console.log('   Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.substring(0, 20) + '...');
     console.log('   Client Secret:', process.env.GOOGLE_CLIENT_SECRET?.substring(0, 20) + '...');
-    console.log('   Redirect URI:', `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/google/callback`);
+    console.log('   NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+    console.log('   Redirect URI:', redirectUri);
     console.log('   Code length:', code.length);
     console.log('   Code preview:', code.substring(0, 20) + '...');
 
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
       client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
       code,
       grant_type: 'authorization_code',
-      redirect_uri: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/google/callback`,
+      redirect_uri: redirectUri,
     });
 
     console.log('📤 Sending request to Google:');

@@ -21,11 +21,14 @@ export default function GoogleOAuthButton({ variant, className = '' }: GoogleOAu
     try {
       // Build Google OAuth URL with dynamic port
       const currentOrigin = window.location.origin;
-      console.log('🔄 Using redirect URI:', `${currentOrigin}/api/auth/google/callback`);
+      const redirectUri = `${currentOrigin}/api/auth/google/callback`;
+      console.log('🔄 Current origin:', currentOrigin);
+      console.log('🔄 Using redirect URI:', redirectUri);
+      console.log('🔄 NEXTAUTH_URL from env:', process.env.NEXTAUTH_URL);
       
       const params = new URLSearchParams({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-        redirect_uri: `${currentOrigin}/api/auth/google/callback`,
+        redirect_uri: redirectUri,
         response_type: 'code',
         scope: 'openid email profile',
         access_type: 'offline',
