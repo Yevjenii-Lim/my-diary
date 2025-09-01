@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exchangeCodeForTokens, getGoogleUserInfo } from '@/lib/google-auth';
+import { getGoogleUserInfo } from '@/lib/google-auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,8 +20,33 @@ export async function GET(request: NextRequest) {
     console.log('🔄 Google OAuth callback received, exchanging code for tokens...');
 
     try {
-      // Exchange authorization code for tokens
-      const tokens = await exchangeCodeForTokens(code);
+      // Exchange authorization code for tokens directly
+      const redirectUri = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/google/callback`;
+      
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+          client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: redirectUri,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.text();
+        console.error('❌ Google token exchange failed in callback:');
+        console.error('   Status:', tokenResponse.status);
+        console.error('   Status Text:', tokenResponse.statusText);
+        console.error('   Response:', errorData);
+        throw new Error('Failed to exchange authorization code');
+      }
+
+      const tokens = await tokenResponse.json();
       
       // Get user info from Google
       const googleUser = await getGoogleUserInfo(tokens.access_token);
