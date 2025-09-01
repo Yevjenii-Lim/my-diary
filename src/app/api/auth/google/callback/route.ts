@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     console.log('   NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
     console.log('   NODE_ENV:', process.env.NODE_ENV);
     console.log('   Request URL:', request.url);
+    console.log('   All env vars:', Object.keys(process.env).filter(key => key.includes('NEXT') || key.includes('GOOGLE') || key.includes('AWS')));
     
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');

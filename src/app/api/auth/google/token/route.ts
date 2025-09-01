@@ -9,6 +9,11 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🔄 Exchanging Google authorization code for tokens...');
+    console.log('🔍 Token route - Environment variables:');
+    console.log('   NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+    console.log('   NODE_ENV:', process.env.NODE_ENV);
+    console.log('   All env vars:', Object.keys(process.env).filter(key => key.includes('NEXT') || key.includes('GOOGLE') || key.includes('AWS')));
+    
     const redirectUri = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/google/callback`;
     console.log('📋 Token exchange parameters:');
     console.log('   Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.substring(0, 20) + '...');
