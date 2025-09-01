@@ -3,18 +3,27 @@ import { getGoogleUserInfo } from '@/lib/google-auth';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 Callback route - Environment variables:');
+    console.log('   NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+    console.log('   NODE_ENV:', process.env.NODE_ENV);
+    console.log('   Request URL:', request.url);
+    
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const error = searchParams.get('error');
 
     if (error) {
       console.error('❌ Google OAuth error:', error);
-      return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/signin?error=google_auth_failed`);
+      const errorRedirectUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/signin?error=google_auth_failed`;
+      console.log('🔄 Redirecting to error URL:', errorRedirectUrl);
+      return NextResponse.redirect(errorRedirectUrl);
     }
 
     if (!code) {
       console.error('❌ No authorization code received from Google');
-      return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/signin?error=no_auth_code`);
+      const errorRedirectUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/signin?error=no_auth_code`;
+      console.log('🔄 Redirecting to error URL:', errorRedirectUrl);
+      return NextResponse.redirect(errorRedirectUrl);
     }
 
     console.log('🔄 Google OAuth callback received, exchanging code for tokens...');
@@ -96,11 +105,15 @@ export async function GET(request: NextRequest) {
 
     } catch (tokenError) {
       console.error('❌ Error exchanging code for tokens:', tokenError);
-      return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/signin?error=token_exchange_failed`);
+      const errorRedirectUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/signin?error=token_exchange_failed`;
+      console.log('🔄 Redirecting to error URL:', errorRedirectUrl);
+      return NextResponse.redirect(errorRedirectUrl);
     }
 
   } catch (error) {
     console.error('❌ Google OAuth callback error:', error);
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/signin?error=callback_error`);
+    const errorRedirectUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/signin?error=callback_error`;
+    console.log('🔄 Redirecting to error URL:', errorRedirectUrl);
+    return NextResponse.redirect(errorRedirectUrl);
   }
 }
