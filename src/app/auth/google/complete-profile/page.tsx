@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/contexts/UserContext';
 
-export default function CompleteGoogleProfile() {
+function CompleteGoogleProfileForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { loginWithGoogle } = useUser();
@@ -121,7 +121,7 @@ export default function CompleteGoogleProfile() {
             Complete Your Profile
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Welcome! Let's set up your writing journey
+            Welcome! Let&apos;s set up your writing journey
           </p>
         </div>
       </div>
@@ -175,7 +175,7 @@ export default function CompleteGoogleProfile() {
 
             <div>
               <label htmlFor="writingGoal" className="block text-sm font-medium text-gray-700">
-                What's your main writing goal?
+                What&apos;s your main writing goal?
               </label>
               <div className="mt-1">
                 <select
@@ -207,5 +207,26 @@ export default function CompleteGoogleProfile() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CompleteGoogleProfile() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="text-center">
+            <Link href="/" className="text-3xl font-playfair font-bold text-gray-900">
+              Write-it
+            </Link>
+            <h2 className="mt-6 text-3xl font-bold text-gray-900">
+              Loading...
+            </h2>
+          </div>
+        </div>
+      </div>
+    }>
+      <CompleteGoogleProfileForm />
+    </Suspense>
   );
 }

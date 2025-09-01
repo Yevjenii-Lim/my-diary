@@ -7,8 +7,7 @@ import { useUser } from '@/contexts/UserContext';
 
 export default function GoogleAuthSuccess() {
   const router = useRouter();
-  const { user, loginWithGoogle } = useUser();
-  const [isProcessing, setIsProcessing] = useState(true);
+  const { loginWithGoogle } = useUser();
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -21,7 +20,6 @@ export default function GoogleAuthSuccess() {
         
         if (!googleUserInfoCookie) {
           setError('Google authentication information not found');
-          setIsProcessing(false);
           return;
         }
 
@@ -48,7 +46,6 @@ export default function GoogleAuthSuccess() {
           } catch (loginError) {
             console.error('❌ Error logging in existing Google user:', loginError);
             setError('Failed to log in existing user');
-            setIsProcessing(false);
             return;
           }
         } else if (response.status === 404) {
@@ -62,12 +59,11 @@ export default function GoogleAuthSuccess() {
       } catch (error) {
         console.error('❌ Error processing Google authentication:', error);
         setError('Failed to complete Google authentication');
-        setIsProcessing(false);
       }
     };
 
     processGoogleAuth();
-  }, [router]);
+  }, [router, loginWithGoogle]);
 
   if (error) {
     return (

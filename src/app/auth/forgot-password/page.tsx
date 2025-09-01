@@ -31,7 +31,7 @@ export default function ForgotPassword() {
       } else {
         setError(result.message);
       }
-    } catch (error) {
+    } catch {
       setError('Failed to send reset code. Please try again.');
     } finally {
       setIsLoading(false);
@@ -75,7 +75,7 @@ export default function ForgotPassword() {
       } else {
         setError(result.message);
       }
-    } catch (error) {
+    } catch {
       setError('Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);

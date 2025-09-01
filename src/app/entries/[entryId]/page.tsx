@@ -369,7 +369,7 @@ export default function EntryPage({ params }: EntryPageProps) {
             
             <div className="mb-6">
               <p className="text-gray-600 mb-3">
-                Are you sure you want to delete <strong>"{entry.title}"</strong>?
+                Are you sure you want to delete <strong>&quot;{entry.title}&quot;</strong>?
               </p>
               <p className="text-sm text-gray-500">
                 This action cannot be undone.

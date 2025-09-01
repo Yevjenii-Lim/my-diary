@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { writingGoals, getGoalsByCategory } from '@/data/writingGoals';
@@ -14,7 +14,7 @@ export default function NewEntry() {
   const { user, userTopics, addUserTopic, isLoading, refreshTopics } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAvailableGoals, setShowAvailableGoals] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+
   const [topicStats, setTopicStats] = useState<Record<string, number>>({});
   const [statsLoading, setStatsLoading] = useState(false);
   const [deleteModal, setDeleteModal] = useState<{ show: boolean; topic: UserTopic | null }>({ show: false, topic: null });
@@ -164,8 +164,7 @@ export default function NewEntry() {
         setDeleting(false);
         
         // Show success message
-        setSuccessMessage(`✅ "${deleteModal.topic.title}" removed from your topics`);
-        setTimeout(() => setSuccessMessage(''), 4000);
+
         
         // Refresh topics and stats immediately
         setStatsLoading(true);
@@ -173,13 +172,11 @@ export default function NewEntry() {
         fetchTopicStats();
       } else {
         const errorData = await response.json();
-        setSuccessMessage(`❌ ${errorData.error || 'Failed to delete topic'}`);
-        setTimeout(() => setSuccessMessage(''), 4000);
+
         setDeleting(false);
       }
     } catch (error) {
-      setSuccessMessage('❌ Failed to delete topic. Please try again.');
-      setTimeout(() => setSuccessMessage(''), 4000);
+
       setDeleting(false);
     }
   };
@@ -219,16 +216,14 @@ export default function NewEntry() {
       }
 
       // Show success message
-      setSuccessMessage(`✅ "${goal.title}" added to your topics!`);
-      setTimeout(() => setSuccessMessage(''), 4000);
+      
       
       // Note: addUserTopic already calls refreshTopics() internally
       // We don't need to call fetchTopicStats() here as it will be called by the useEffect
       
     } catch (error) {
       // Show user-friendly error message instead of alert
-      setSuccessMessage(`❌ Failed to add "${goal.title}". Please try again.`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      
       
       // Reset button on error
       if (button) {
@@ -279,7 +274,7 @@ export default function NewEntry() {
               <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
                 <div className="text-6xl mb-4">📝</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No Topics Yet</h3>
-                <p className="text-gray-600 mb-6">You don't have any writing topics yet. Let's add some!</p>
+                <p className="text-gray-600 mb-6">You don&apos;t have any writing topics yet. Let&apos;s add some!</p>
                 <div className="flex justify-center space-x-4">
                   <Link
                     href="/new-topic"
@@ -435,7 +430,7 @@ export default function NewEntry() {
               <div className="mb-8 bg-white rounded-xl p-6 border border-gray-200 text-center">
                 <div className="text-4xl mb-4">🎉</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">All Topics Added!</h3>
-                <p className="text-gray-600 mb-4">You've already added all available writing topics to your collection.</p>
+                <p className="text-gray-600 mb-4">You&apos;ve already added all available writing topics to your collection.</p>
                 <button
                   type="button"
                   onClick={() => setShowAvailableGoals(false)}
@@ -453,7 +448,7 @@ export default function NewEntry() {
               <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
                 <div className="text-4xl mb-4">✨</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Want to Create Something New?</h3>
-                <p className="text-gray-600 mb-6">Create a custom writing topic that's perfect for your specific needs and interests.</p>
+                <p className="text-gray-600 mb-6">Create a custom writing topic that&apos;s perfect for your specific needs and interests.</p>
                 <Link
                   href="/new-topic"
                   className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors shadow-md hover:shadow-lg"
@@ -479,14 +474,14 @@ export default function NewEntry() {
             
             <div className="mb-6">
               <p className="text-gray-600 mb-3">
-                Are you sure you want to remove <strong>"{deleteModal.topic.title}"</strong> from your topics?
+                Are you sure you want to remove <strong>&quot;{deleteModal.topic.title}&quot;</strong> from your topics?
               </p>
               
               {topicStats[deleteModal.topic.topicId] > 0 && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
                   <p className="text-yellow-800 text-sm">
                     ⚠️ This topic has {topicStats[deleteModal.topic.topicId]} {topicStats[deleteModal.topic.topicId] === 1 ? 'entry' : 'entries'}. 
-                    You'll need to delete all entries first before removing the topic.
+                    You&apos;ll need to delete all entries first before removing the topic.
                   </p>
                 </div>
               )}

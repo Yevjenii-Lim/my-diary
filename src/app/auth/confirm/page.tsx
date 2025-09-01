@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { confirmSignUp, resendConfirmationCode } from '@/lib/cognito';
 
-export default function ConfirmPage() {
+function ConfirmPageForm() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +46,7 @@ export default function ConfirmPage() {
       } else {
         setError(result.message);
       }
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -70,7 +70,7 @@ export default function ConfirmPage() {
       } else {
         setError(result.message);
       }
-    } catch (error) {
+    } catch {
       setError('Failed to resend confirmation code');
     } finally {
       setIsLoading(false);
@@ -167,7 +167,7 @@ export default function ConfirmPage() {
                 disabled={isLoading || !email}
                 className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Didn't receive the code? Resend
+                Didn&apos;t receive the code? Resend
               </button>
             </div>
           </form>
@@ -194,5 +194,26 @@ export default function ConfirmPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="text-center">
+            <Link href="/" className="text-3xl font-playfair font-bold text-gray-900">
+              Write-it
+            </Link>
+            <h2 className="mt-6 text-3xl font-bold text-gray-900">
+              Loading...
+            </h2>
+          </div>
+        </div>
+      </div>
+    }>
+      <ConfirmPageForm />
+    </Suspense>
   );
 }
