@@ -58,9 +58,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error checking Google user:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('❌ Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      region: process.env.AWS_REGION,
+      tableName: USERS_TABLE,
+      hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
+      hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY
+    });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error.message 
+    }, { status: 500 });
   }
 }
 

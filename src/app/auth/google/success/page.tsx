@@ -28,7 +28,10 @@ export default function GoogleAuthSuccess() {
         console.log('✅ Google authentication successful for:', googleUserInfo.email);
 
         // Check if user exists in our system
+        console.log('🔄 Checking if user exists in database...');
         const response = await fetch(`/api/users/google?email=${encodeURIComponent(googleUserInfo.email)}`);
+        
+        console.log('📋 API Response status:', response.status);
         
         if (response.ok) {
           // User exists, get their data
@@ -53,7 +56,9 @@ export default function GoogleAuthSuccess() {
           console.log('🆕 New Google user, redirecting to profile completion');
           router.push(`/auth/google/complete-profile?email=${encodeURIComponent(googleUserInfo.email)}&name=${encodeURIComponent(googleUserInfo.name)}`);
         } else {
-          throw new Error('Failed to check user existence');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ API Error response:', errorData);
+          throw new Error(`Failed to check user existence: ${errorData.details || errorData.error || response.statusText}`);
         }
 
       } catch (error) {
