@@ -37,6 +37,8 @@ export default function GoogleOAuthButton({ variant, className = '' }: GoogleOAu
 
       const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
       console.log('🔄 Google OAuth URL:', googleAuthUrl);
+      console.log('🔄 Full redirect_uri being sent to Google:', redirectUri);
+      console.log('🔄 All params being sent:', Object.fromEntries(params.entries()));
       
       // Navigate to Google OAuth
       window.location.href = googleAuthUrl;

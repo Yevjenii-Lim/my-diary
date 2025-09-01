@@ -20,6 +20,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   swcMinify: true,
+  // Ensure proper asset loading in production
+  trailingSlash: false,
 };
 
 export default nextConfig;
