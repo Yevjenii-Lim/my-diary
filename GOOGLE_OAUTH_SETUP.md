@@ -15,6 +15,7 @@ The `token_exchange_failed` error occurs because Google Cloud Console requires *
 ```
 http://localhost:3000/api/auth/google/callback
 https://your-amplify-domain.amplifyapp.com/api/auth/google/callback
+https://www.write-it.net/api/auth/google/callback
 ```
 
 4. Click **Save**
@@ -30,7 +31,7 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 #### **Amplify Environment Variables**
 ```env
-NEXTAUTH_URL=https://your-amplify-domain.amplifyapp.com
+NEXTAUTH_URL=https://www.write-it.net
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
@@ -38,7 +39,7 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 ### **Step 3: Test Both Environments**
 
 1. **Local Test**: `http://localhost:3000` → Should work with local redirect URI
-2. **Amplify Test**: `https://your-amplify-domain.amplifyapp.com` → Should work with Amplify redirect URI
+2. **Amplify Test**: `https://www.write-it.net` → Should work with Amplify redirect URI
 
 ## 🔍 **How It Works**
 
@@ -52,7 +53,7 @@ const redirect_uri = `${currentOrigin}/api/auth/google/callback`;
 
 This means:
 - **Local**: `http://localhost:3000/api/auth/google/callback`
-- **Amplify**: `https://your-amplify-domain.amplifyapp.com/api/auth/google/callback`
+- **Amplify**: `https://www.write-it.net/api/auth/google/callback`
 
 Google Cloud Console must have **both** URIs registered to work in both environments.
 
@@ -60,9 +61,9 @@ Google Cloud Console must have **both** URIs registered to work in both environm
 
 1. **Check Google Cloud Console**: Both redirect URIs are listed
 2. **Check Local Environment**: `.env.local` has `NEXTAUTH_URL=http://localhost:3000`
-3. **Check Amplify Environment**: Environment variables have `NEXTAUTH_URL=https://your-amplify-domain.amplifyapp.com`
+3. **Check Amplify Environment**: Environment variables have `NEXTAUTH_URL=https://www.write-it.net`
 4. **Test Local**: Try Google OAuth on `localhost:3000`
-5. **Test Amplify**: Try Google OAuth on your Amplify domain
+5. **Test Amplify**: Try Google OAuth on https://www.write-it.net
 
 ## 🚨 **Common Issues**
 
