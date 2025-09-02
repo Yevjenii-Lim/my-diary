@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAISuggestions } from '@/lib/ai-suggestions';
+import { validateEnvironmentVariables } from '@/lib/env-validation';
 
 export async function GET(request: NextRequest) {
   try {
+    // Validate environment variables
+    validateEnvironmentVariables();
+    
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const topicTitle = searchParams.get('topicTitle');

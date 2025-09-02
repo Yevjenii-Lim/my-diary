@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoogleUserInfo } from '@/lib/google-auth';
+import { validateEnvironmentVariables } from '@/lib/env-validation';
 
 export async function GET(request: NextRequest) {
   try {
+    // Validate environment variables
+    validateEnvironmentVariables();
+    
     console.log('🔍 Callback route - Environment variables:');
     console.log('   NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
     console.log('   NODE_ENV:', process.env.NODE_ENV);
