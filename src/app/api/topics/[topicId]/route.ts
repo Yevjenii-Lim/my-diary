@@ -48,10 +48,10 @@ export async function PUT(
     const body = await request.json();
     const { userId, title, description } = body;
 
-    console.log(`🔄 API: Updating topic ${resolvedParams.topicId} for userId: ${userId}`);
+
 
     if (!userId || !title || !description) {
-      console.log('❌ API: Missing required fields:', { userId, title, description });
+
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -62,11 +62,11 @@ export async function PUT(
     });
 
     if (!updatedTopic) {
-      console.log('❌ API: Topic not found or update failed');
+
       return NextResponse.json({ error: 'Topic not found' }, { status: 404 });
     }
 
-    console.log(`✅ API: Successfully updated topic: ${updatedTopic.title} for user ${userId}`);
+
     return NextResponse.json({ 
       topic: updatedTopic,
       message: 'Topic updated successfully' 

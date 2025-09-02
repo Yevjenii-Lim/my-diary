@@ -24,8 +24,6 @@ export default function GoogleAuthSuccess() {
         }
 
         const googleUserInfo = JSON.parse(decodeURIComponent(googleUserInfoCookie.split('=')[1]));
-        
-        console.log('✅ Google authentication successful for:', googleUserInfo.email);
 
         // Check if user exists in our system
         const response = await fetch(`/api/users/google?email=${encodeURIComponent(googleUserInfo.email)}`);

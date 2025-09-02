@@ -289,11 +289,11 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   try {
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) {
-      console.log('❌ No refresh token available');
+
       return false;
     }
 
-    console.log('🔄 Attempting to refresh access token...');
+    
 
     const command = new RefreshTokenCommand({
       ClientId: CLIENT_ID,
@@ -307,18 +307,18 @@ export const refreshAccessToken = async (): Promise<boolean> => {
     
     if (result.AuthenticationResult?.AccessToken) {
       localStorage.setItem('accessToken', result.AuthenticationResult.AccessToken);
-      console.log('✅ Access token refreshed successfully');
+      
       return true;
     }
     
-    console.log('❌ No new access token received from refresh');
+    
     return false;
   } catch (error: any) {
     console.error('❌ Error refreshing token:', error.message);
     
     // Clear invalid tokens on refresh failure
     if (error.name === 'NotAuthorizedException' || error.name === 'TokenExpiredException') {
-      console.log('🗑️ Clearing invalid tokens...');
+      
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
     }
@@ -350,11 +350,11 @@ export const ensureValidToken = async (): Promise<boolean> => {
     const refreshed = await refreshAccessToken();
     return refreshed;
   } catch (error) {
-    console.log('🔄 Token validation failed, attempting refresh...');
+    
     // If any error occurs, try to refresh the token
     const refreshed = await refreshAccessToken();
     if (!refreshed) {
-      console.log('❌ Token refresh failed, user needs to sign in again');
+      
       // Clear invalid tokens
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');

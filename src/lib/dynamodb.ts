@@ -66,7 +66,7 @@ export const createUserTopic = async (topic: Omit<UserTopic, 'id' | 'createdAt' 
 };
 
 export const getUserTopics = async (userId: string): Promise<UserTopic[]> => {
-  console.log(`🔍 DynamoDB: Querying topics for userId: ${userId}`);
+  
   
   const result = await docClient.send(new QueryCommand({
     TableName: TOPICS_TABLE,
@@ -77,7 +77,7 @@ export const getUserTopics = async (userId: string): Promise<UserTopic[]> => {
   }));
 
   const topics = (result.Items || []) as UserTopic[];
-  console.log(`📋 DynamoDB: Found ${topics.length} topics for user ${userId}:`, topics.map(t => t.title));
+  
   
   // Sort topics by creation date (oldest first)
   const sortedTopics = topics.sort((a, b) => {

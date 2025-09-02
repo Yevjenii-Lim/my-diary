@@ -23,7 +23,7 @@ export function validateEnvironmentVariables() {
     return false;
   }
 
-  console.log('✅ All required environment variables are loaded');
+  
   return true;
 }
 

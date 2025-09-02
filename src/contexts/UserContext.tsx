@@ -81,7 +81,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         try {
           await ensureValidToken();
         } catch (error) {
-          console.log('Periodic token refresh failed:', error);
+    
         }
       }
     }, 6 * 60 * 60 * 1000); // 6 hours
@@ -129,24 +129,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = async (userData: User) => {
     try {
-      console.log('🔄 Logging in Google user:', userData.email);
-      console.log('📋 User data being set:', userData);
+      
       
       // Store Google user in localStorage for persistence
       localStorage.setItem('googleUser', JSON.stringify(userData));
-      console.log('💾 Google user stored in localStorage');
+      
       
       // Set the user in context
       setUser(userData);
-      console.log('✅ User state updated in context');
+      
       
       // Load user topics
-      console.log('🔄 Loading user topics...');
-      await refreshTopics(userData);
-      console.log('✅ User topics loaded');
       
-      console.log('✅ Google user logged in successfully');
-      console.log('🔄 Current user state:', userData);
+      await refreshTopics(userData);
+      
     } catch (error) {
       console.error('❌ Error logging in Google user:', error);
       throw error;

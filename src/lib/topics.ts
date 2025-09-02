@@ -116,7 +116,7 @@ export const initialTopics = [
 
 export async function addTopicsForNewUser(userId: string, userName: string = 'New User') {
   try {
-    console.log(`📚 Adding initial topics for new user: ${userName} (${userId})`);
+
 
     const addedTopics = [];
     const failedTopics = [];
@@ -141,22 +141,14 @@ export async function addTopicsForNewUser(userId: string, userName: string = 'Ne
           Item: userTopic,
         }));
         addedTopics.push(topic.title);
-        console.log(`✅ Added: ${topic.title}`);
+
       } catch (error: any) {
         failedTopics.push({ title: topic.title, error: error.message });
-        console.log(`❌ Failed to add ${topic.title}: ${error.message}`);
+
       }
     }
 
-    console.log(`\n🎉 Topics setup completed for ${userName}!`);
-    console.log(`📊 Successfully added: ${addedTopics.length} topics`);
-    
-    if (failedTopics.length > 0) {
-      console.log(`⚠️  Failed to add: ${failedTopics.length} topics`);
-      failedTopics.forEach(failed => {
-        console.log(`   - ${failed.title}: ${failed.error}`);
-      });
-    }
+
 
     return {
       success: true,
