@@ -28,21 +28,15 @@ export default function GoogleAuthSuccess() {
         console.log('✅ Google authentication successful for:', googleUserInfo.email);
 
         // Check if user exists in our system
-        console.log('🔄 Checking if user exists in database...');
         const response = await fetch(`/api/users/google?email=${encodeURIComponent(googleUserInfo.email)}`);
-        
-        console.log('📋 API Response status:', response.status);
         
         if (response.ok) {
           // User exists, get their data
           const userData = await response.json();
-          console.log('✅ Existing user found:', userData.user.email);
           
           // Log in the existing Google user
           try {
-            console.log('🔄 Logging in existing Google user...');
             await loginWithGoogle(userData.user);
-            console.log('✅ Existing Google user logged in successfully');
             
             // Redirect to main app
             router.push('/new-entry');
@@ -53,7 +47,6 @@ export default function GoogleAuthSuccess() {
           }
         } else if (response.status === 404) {
           // User doesn't exist, redirect to complete profile
-          console.log('🆕 New Google user, redirecting to profile completion');
           router.push(`/auth/google/complete-profile?email=${encodeURIComponent(googleUserInfo.email)}&name=${encodeURIComponent(googleUserInfo.name)}`);
         } else {
           const errorData = await response.json().catch(() => ({}));

@@ -26,8 +26,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Email parameter is required' }, { status: 400 });
     }
 
-    console.log(`🔍 Checking if Google user exists: ${email}`);
-
     // Query users by email
     const queryCommand = new QueryCommand({
       TableName: USERS_TABLE,
@@ -42,7 +40,6 @@ export async function GET(request: NextRequest) {
 
     if (result.Items && result.Items.length > 0) {
       const user = result.Items[0];
-      console.log(`✅ Google user found: ${user.email}`);
       
       return NextResponse.json({
         user: {
@@ -57,7 +54,6 @@ export async function GET(request: NextRequest) {
         exists: true,
       });
     } else {
-      console.log(`❌ Google user not found: ${email}`);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -89,7 +85,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and name are required' }, { status: 400 });
     }
 
-    console.log(`🆕 Creating new Google user: ${email}`);
+
 
     // Generate unique user ID
     const userId = `google_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -120,7 +116,6 @@ export async function POST(request: NextRequest) {
     const existingResult = await docClient.send(existingUserQuery);
 
     if (existingResult.Items && existingResult.Items.length > 0) {
-      console.log(`⚠️ Google user already exists: ${email}`);
       return NextResponse.json({ error: 'User already exists' }, { status: 409 });
     }
 
@@ -132,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     await docClient.send(putCommand);
 
-    console.log(`✅ Google user created successfully: ${email}`);
+
 
     return NextResponse.json({
       user: {

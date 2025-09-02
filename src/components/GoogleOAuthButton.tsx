@@ -22,9 +22,6 @@ export default function GoogleOAuthButton({ variant, className = '' }: GoogleOAu
       // Build Google OAuth URL with dynamic port
       const currentOrigin = window.location.origin;
       const redirectUri = `${currentOrigin}/api/auth/google/callback`;
-      console.log('🔄 Current origin:', currentOrigin);
-      console.log('🔄 Using redirect URI:', redirectUri);
-      console.log('🔄 Note: NEXTAUTH_URL is server-side only, using currentOrigin instead');
       
       const params = new URLSearchParams({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
@@ -36,9 +33,6 @@ export default function GoogleOAuthButton({ variant, className = '' }: GoogleOAu
       });
 
       const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-      console.log('🔄 Google OAuth URL:', googleAuthUrl);
-      console.log('🔄 Full redirect_uri being sent to Google:', redirectUri);
-      console.log('🔄 All params being sent:', Object.fromEntries(params.entries()));
       
       // Navigate to Google OAuth
       window.location.href = googleAuthUrl;

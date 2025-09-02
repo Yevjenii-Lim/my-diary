@@ -50,50 +50,21 @@ function CompleteGoogleProfileForm() {
         }),
       });
 
-      if (response.ok) {
-        const userData = await response.json();
-        console.log('✅ Google user account created:', userData.user.email);
-        console.log('📋 User data:', userData.user);
+              if (response.ok) {
+          const userData = await response.json();
         
-        // Set the user in context and redirect
-        try {
-          console.log('🔄 Attempting to log in Google user...');
-          console.log('🔄 loginWithGoogle function available:', typeof loginWithGoogle);
-          
-          // Log in the Google user
-          await loginWithGoogle(userData.user);
-          console.log('✅ User logged in successfully');
-          
-          // Check if user is now in context
-          console.log('🔍 Checking user context after login...');
-          // We can't directly access the context here, but we can check localStorage
-          const storedUser = localStorage.getItem('googleUser');
-          console.log('🔍 localStorage after login:', storedUser ? 'EXISTS' : 'NOT FOUND');
-          
-          // Redirect to main app
-          console.log('🔄 Redirecting to new-entry page...');
-          console.log('🔄 Current URL before redirect:', window.location.href);
-          
-          // Add a small delay to ensure user state is set
-          console.log('⏳ Waiting 500ms for user state to be set...');
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          // Try different redirect methods
+          // Set the user in context and redirect
           try {
+            // Log in the Google user
+            await loginWithGoogle(userData.user);
+          
+            // Redirect to main app
             router.push('/new-entry');
-            console.log('✅ Router.push called successfully');
-          } catch (routerError) {
-            console.error('❌ Router.push failed:', routerError);
-            // Fallback to window.location
-            console.log('🔄 Trying window.location fallback...');
+          } catch (loginError) {
+            console.error('❌ Error during login redirect:', loginError);
+            // Fallback: redirect anyway
             window.location.href = '/new-entry';
           }
-        } catch (loginError) {
-          console.error('❌ Error during login redirect:', loginError);
-          // Fallback: redirect anyway
-          console.log('🔄 Fallback redirect...');
-          window.location.href = '/new-entry';
-        }
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to create account');
