@@ -322,7 +322,7 @@ export const getUserEncryptedEntries = async (
             try {
               const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
               const entry: DiaryEntry = {
-                id: `${userId}-${encryptedEntry.entryId}`,
+                id: encryptedEntry.entryId,
                 userId: encryptedEntry.userId,
                 entryId: encryptedEntry.entryId,
                 topicId: encryptedEntry.topicId,
@@ -358,7 +358,7 @@ export const getUserEncryptedEntries = async (
               try {
                 const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
                 const entry: DiaryEntry = {
-                  id: `${userId}-${encryptedEntry.entryId}`,
+                  id: encryptedEntry.entryId,
                   userId: encryptedEntry.userId,
                   entryId: encryptedEntry.entryId,
                   topicId: encryptedEntry.topicId,
@@ -392,7 +392,7 @@ export const getUserEncryptedEntries = async (
           try {
             const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
             const entry: DiaryEntry = {
-              id: `${userId}-${encryptedEntry.entryId}`,
+              id: encryptedEntry.entryId,
               userId: encryptedEntry.userId,
               entryId: encryptedEntry.entryId,
               topicId: encryptedEntry.topicId,
