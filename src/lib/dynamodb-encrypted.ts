@@ -105,10 +105,12 @@ export const getEncryptedDiaryEntry = async (
       actualEntryId = parts.slice(3).join('-');
     } else {
       // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-topicId-timestamp
+      // UUID is always 5 parts, so we need at least 6 total parts
       if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
         console.error(`❌ Invalid UUID entryId format: ${entryId}`);
         return null;
       }
+      // For UUID, always take first 5 parts as userId, rest as actualEntryId
       userId = parts.slice(0, 5).join('-');
       actualEntryId = parts.slice(5).join('-');
     }
@@ -181,10 +183,12 @@ export const updateEncryptedDiaryEntry = async (
       actualEntryId = parts.slice(3).join('-');
     } else {
       // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-topicId-timestamp
+      // UUID is always 5 parts, so we need at least 6 total parts
       if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
         console.error(`❌ Invalid UUID entryId format: ${entryId}`);
         return null;
       }
+      // For UUID, always take first 5 parts as userId, rest as actualEntryId
       userId = parts.slice(0, 5).join('-');
       actualEntryId = parts.slice(5).join('-');
     }
@@ -264,10 +268,12 @@ export const deleteEncryptedDiaryEntry = async (entryId: string): Promise<boolea
       actualEntryId = parts.slice(3).join('-');
     } else {
       // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-topicId-timestamp
+      // UUID is always 5 parts, so we need at least 6 total parts
       if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
         console.error(`❌ Invalid UUID entryId format: ${entryId}`);
         return false;
       }
+      // For UUID, always take first 5 parts as userId, rest as actualEntryId
       userId = parts.slice(0, 5).join('-');
       actualEntryId = parts.slice(5).join('-');
     }
