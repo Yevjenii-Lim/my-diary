@@ -114,7 +114,7 @@ export const initialTopics = [
   }
 ];
 
-export async function addTopicsForNewUser(userId: string, userName: string = 'New User') {
+export async function addTopicsForNewUser(userId: string, _userName: string = 'New User') {
   try {
 
 
@@ -142,8 +142,9 @@ export async function addTopicsForNewUser(userId: string, userName: string = 'Ne
         }));
         addedTopics.push(topic.title);
 
-      } catch (error: any) {
-        failedTopics.push({ title: topic.title, error: error.message });
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        failedTopics.push({ title: topic.title, error: errorMessage });
 
       }
     }
@@ -158,11 +159,12 @@ export async function addTopicsForNewUser(userId: string, userName: string = 'Ne
       failedTopics
     };
 
-  } catch (error: any) {
-    console.error('❌ Error adding topics for new user:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Error adding topics for new user:', errorMessage);
     return {
       success: false,
-      error: error.message
+      error: errorMessage
     };
   }
 }

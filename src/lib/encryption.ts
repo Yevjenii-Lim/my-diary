@@ -6,7 +6,6 @@ const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 16; // 128 bits
 const TAG_LENGTH = 16; // 128 bits
 const SALT_LENGTH = 32; // 256 bits
-const ITERATIONS = 100000; // PBKDF2 iterations
 
 export interface EncryptedData {
   encrypted: string;
@@ -192,16 +191,21 @@ export function generateUserEncryptionSecret(userId: string): string {
 /**
  * Validate encryption data structure
  */
-export function isValidEncryptedData(data: any): data is EncryptedData {
+export function isValidEncryptedData(data: unknown): data is EncryptedData {
   return (
+    data !== null &&
     typeof data === 'object' &&
-    typeof data.encrypted === 'string' &&
-    typeof data.iv === 'string' &&
-    typeof data.tag === 'string' &&
-    typeof data.salt === 'string' &&
-    data.encrypted.length > 0 &&
-    data.iv.length === IV_LENGTH * 2 && // Hex string length
-    data.tag.length === TAG_LENGTH * 2 && // Hex string length
-    data.salt.length === SALT_LENGTH * 2 // Hex string length
+    'encrypted' in data &&
+    'iv' in data &&
+    'tag' in data &&
+    'salt' in data &&
+    typeof (data as EncryptedData).encrypted === 'string' &&
+    typeof (data as EncryptedData).iv === 'string' &&
+    typeof (data as EncryptedData).tag === 'string' &&
+    typeof (data as EncryptedData).salt === 'string' &&
+    (data as EncryptedData).encrypted.length > 0 &&
+    (data as EncryptedData).iv.length === IV_LENGTH * 2 && // Hex string length
+    (data as EncryptedData).tag.length === TAG_LENGTH * 2 && // Hex string length
+    (data as EncryptedData).salt.length === SALT_LENGTH * 2 // Hex string length
   );
 }

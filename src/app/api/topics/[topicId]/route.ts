@@ -69,7 +69,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Title and description are required' }, { status: 400 });
     }
 
-    const updatedTopic = await updateUserTopic(topicId, { title, description });
+    const updatedTopic = await updateUserTopic(topicId, userId, { title, description });
 
     if (!updatedTopic) {
       return NextResponse.json({ error: 'Topic not found' }, { status: 404 });

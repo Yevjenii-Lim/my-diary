@@ -126,7 +126,7 @@ export const getUserCategories = async (userId: string): Promise<Array<{ id: str
 export const updateUserTopic = async (topicId: string, userId: string, updates: Partial<UserTopic>): Promise<UserTopic | null> => {
   const updateExpression: string[] = [];
   const expressionAttributeNames: Record<string, string> = {};
-  const expressionAttributeValues: Record<string, any> = {};
+  const expressionAttributeValues: Record<string, unknown> = {};
 
   Object.entries(updates).forEach(([key, value]) => {
     if (key !== 'id' && key !== 'userId' && key !== 'createdAt') {

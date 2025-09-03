@@ -19,7 +19,6 @@ const docClient = DynamoDBDocumentClient.from(client);
 
 // Table names
 const ENTRIES_TABLE = process.env.DYNAMODB_ENTRIES_TABLE || 'diary-entries-encrypted';
-const USERS_TABLE = process.env.DYNAMODB_USERS_TABLE || 'diary-users';
 
 // ===== ENCRYPTED ENTRIES OPERATIONS =====
 
@@ -253,7 +252,7 @@ export const getUserEncryptedEntries = async (
   try {
     console.log(`🔐 Fetching encrypted entries for user: ${userId}${topicId ? `, topic: ${topicId}` : ''}`);
     
-    let entries: DiaryEntry[] = [];
+    const entries: DiaryEntry[] = [];
     
     if (topicId) {
       // Query by topic using GSI
@@ -294,7 +293,7 @@ export const getUserEncryptedEntries = async (
           }
         }
         
-      } catch (error) {
+      } catch (_error) {
         console.log(`⚠️ GSI query failed, falling back to scan method`);
         
         // Fallback: query all entries by userId and filter by topicId
@@ -395,7 +394,7 @@ export const countUserEntries = async (userId: string, topicId?: string): Promis
         
         console.log(`✅ Counted ${result.Count || 0} entries for topic ${topicId}`);
         return result.Count || 0;
-      } catch (error) {
+      } catch (_error) {
         console.log(`⚠️ GSI query failed for topic ${topicId}, falling back to scan method`);
         
         // Fallback: query all entries by userId and filter by topicId

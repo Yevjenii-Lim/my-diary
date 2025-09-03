@@ -1,5 +1,4 @@
 import { createHash, randomBytes } from 'crypto';
-import { getUser, updateUser } from './dynamodb';
 
 // In-memory cache for encryption keys (for development)
 // In production, this should be replaced with a secure key management service
@@ -23,8 +22,8 @@ export function generateUserEncryptionSecret(userId: string): string {
  */
 export async function storeUserEncryptionSecret(userId: string, encryptionSecret: string): Promise<void> {
   try {
-    // Hash the secret before storing
-    const hashedSecret = createHash('sha256').update(encryptionSecret).digest('hex');
+    // Hash the secret before storing (not used in current implementation)
+    // const hashedSecret = createHash('sha256').update(encryptionSecret).digest('hex');
     
     // Store in database (this would need to be implemented in the User model)
     // For now, we'll use the in-memory cache
@@ -80,8 +79,9 @@ export async function initializeUserEncryption(userId: string): Promise<string> 
     console.log(`🎉 Encryption initialization completed for user: ${userId}`);
     return encryptionSecret;
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error(`❌ Failed to initialize encryption for user ${userId}:`, error);
-    throw new Error(`Failed to initialize user encryption: ${error.message}`);
+    throw new Error(`Failed to initialize user encryption: ${errorMessage}`);
   }
 }
 

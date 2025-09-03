@@ -10,7 +10,7 @@ const CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '';
 export interface AuthResult {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface User {
@@ -46,10 +46,11 @@ export const signUp = async (email: string, password: string, name: string): Pro
       message: 'User registered successfully. Please check your email for verification.',
       data: result,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to sign up';
     return {
       success: false,
-      message: error.message || 'Failed to sign up',
+      message: errorMessage,
     };
   }
 };
@@ -69,10 +70,11 @@ export const confirmSignUp = async (email: string, code: string): Promise<AuthRe
       success: true,
       message: 'Email confirmed successfully. You can now sign in.',
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to confirm sign up';
     return {
       success: false,
-      message: error.message || 'Failed to confirm sign up',
+      message: errorMessage,
     };
   }
 };
@@ -118,17 +120,21 @@ export const signIn = async (email: string, password: string): Promise<AuthResul
         message: 'Authentication failed',
       };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to sign in';
+    const errorName = error instanceof Error ? error.name : 'Unknown';
+    const errorCode = (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
+    
     console.error('❌ Sign in error:', error);
     console.error('❌ Error details:', {
-      name: error.name,
-      message: error.message,
-      code: error.$metadata?.httpStatusCode,
+      name: errorName,
+      message: errorMessage,
+      code: errorCode,
     });
     
     return {
       success: false,
-      message: error.message || 'Failed to sign in',
+      message: errorMessage,
     };
   }
 };
@@ -228,10 +234,11 @@ export const forgotPassword = async (email: string): Promise<AuthResult> => {
       success: true,
       message: 'Password reset code sent to your email',
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to send password reset code';
     return {
       success: false,
-      message: error.message || 'Failed to send password reset code',
+      message: errorMessage,
     };
   }
 };
@@ -252,10 +259,11 @@ export const confirmForgotPassword = async (email: string, code: string, newPass
       success: true,
       message: 'Password reset successfully',
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to reset password';
     return {
       success: false,
-      message: error.message || 'Failed to reset password',
+      message: errorMessage,
     };
   }
 };
@@ -276,10 +284,11 @@ export const resendConfirmationCode = async (email: string): Promise<AuthResult>
       success: true,
       message: 'Confirmation code resent successfully. Please check your email.',
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to resend confirmation code';
     return {
       success: false,
-      message: error.message || 'Failed to resend confirmation code',
+      message: errorMessage,
     };
   }
 };
@@ -313,11 +322,14 @@ export const refreshAccessToken = async (): Promise<boolean> => {
     
     
     return false;
-  } catch (error: any) {
-    console.error('❌ Error refreshing token:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorName = error instanceof Error ? error.name : 'Unknown';
+    
+    console.error('❌ Error refreshing token:', errorMessage);
     
     // Clear invalid tokens on refresh failure
-    if (error.name === 'NotAuthorizedException' || error.name === 'TokenExpiredException') {
+    if (errorName === 'NotAuthorizedException' || errorName === 'TokenExpiredException') {
       
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
