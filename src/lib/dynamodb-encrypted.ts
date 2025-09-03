@@ -328,7 +328,7 @@ export const getUserEncryptedEntries = async (
             try {
               const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
               const entry: DiaryEntry = {
-                id: encryptedEntry.entryId,
+                id: `${encryptedEntry.userId}-${encryptedEntry.entryId}`, // Reconstruct full entry ID
                 userId: encryptedEntry.userId,
                 entryId: encryptedEntry.entryId,
                 topicId: encryptedEntry.topicId,
@@ -364,7 +364,7 @@ export const getUserEncryptedEntries = async (
               try {
                 const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
                 const entry: DiaryEntry = {
-                  id: encryptedEntry.entryId,
+                  id: `${encryptedEntry.userId}-${encryptedEntry.entryId}`, // Reconstruct full entry ID
                   userId: encryptedEntry.userId,
                   entryId: encryptedEntry.entryId,
                   topicId: encryptedEntry.topicId,
@@ -398,7 +398,7 @@ export const getUserEncryptedEntries = async (
           try {
             const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
             const entry: DiaryEntry = {
-              id: encryptedEntry.entryId,
+              id: `${encryptedEntry.userId}-${encryptedEntry.entryId}`, // Reconstruct full entry ID
               userId: encryptedEntry.userId,
               entryId: encryptedEntry.entryId,
               topicId: encryptedEntry.topicId,
