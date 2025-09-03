@@ -1,6 +1,10 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import { User, UserTopic, DiaryEntry } from '@/types/database';
+import { User, UserTopic } from '@/types/database';
+import { 
+  generateUserEncryptionSecret,
+  hashData
+} from '@/lib/encryption';
 
 // Initialize DynamoDB client
 const client = new DynamoDBClient({
@@ -19,13 +23,20 @@ const docClient = DynamoDBDocumentClient.from(client);
 // Table names
 const USERS_TABLE = process.env.USERS_TABLE || 'diary-users';
 const TOPICS_TABLE = process.env.TOPICS_TABLE || 'diary-topics';
-const ENTRIES_TABLE = process.env.ENTRIES_TABLE || 'diary-entries';
 
 // User operations
-export const createUser = async (user: Omit<User, 'createdAt' | 'updatedAt'>): Promise<User> => {
+export const createUser = async (user: Omit<User, 'createdAt' | 'updatedAt' | 'encryptionSecret' | 'encryptionSalt'>): Promise<User> => {
   const now = new Date().toISOString();
+  
+  // Generate encryption secret and salt for the user
+  const { hash: encryptionSecret, salt: encryptionSalt } = hashData(
+    generateUserEncryptionSecret(user.id)
+  );
+  
   const newUser: User = {
     ...user,
+    encryptionSecret,
+    encryptionSalt,
     createdAt: now,
     updatedAt: now,
   };
@@ -154,95 +165,7 @@ export const deleteUserTopic = async (topicId: string, userId: string): Promise<
   }));
 };
 
-// Entry operations
-export const createDiaryEntry = async (entry: Omit<DiaryEntry, 'id' | 'entryId' | 'createdAt' | 'updatedAt'>): Promise<DiaryEntry> => {
-  const now = new Date().toISOString();
-  const entryId = `${entry.topicId}-${Date.now()}`;
-  const newEntry: DiaryEntry = {
-    ...entry,
-    id: `${entry.userId}-${entryId}`,
-    entryId,
-    createdAt: now,
-    updatedAt: now,
-  };
 
-  await docClient.send(new PutCommand({
-    TableName: ENTRIES_TABLE,
-    Item: newEntry,
-  }));
-
-  return newEntry;
-};
-
-export const getUserEntries = async (userId: string, topicId?: string): Promise<DiaryEntry[]> => {
-  if (topicId) {
-    // Use GSI to query by topic
-    const result = await docClient.send(new QueryCommand({
-      TableName: ENTRIES_TABLE,
-      IndexName: 'TopicEntriesIndex',
-      KeyConditionExpression: 'topicId = :topicId',
-      ExpressionAttributeValues: {
-        ':topicId': topicId,
-      },
-    }));
-    return (result.Items || []) as DiaryEntry[];
-  } else {
-    // Query by user
-    const result = await docClient.send(new QueryCommand({
-      TableName: ENTRIES_TABLE,
-      KeyConditionExpression: 'userId = :userId',
-      ExpressionAttributeValues: {
-        ':userId': userId,
-      },
-    }));
-    return (result.Items || []) as DiaryEntry[];
-  }
-};
-
-export const getEntry = async (entryId: string): Promise<DiaryEntry | null> => {
-  const result = await docClient.send(new GetCommand({
-    TableName: ENTRIES_TABLE,
-    Key: { id: entryId },
-  }));
-
-  return result.Item as DiaryEntry || null;
-};
-
-export const updateDiaryEntry = async (entryId: string, updates: Partial<DiaryEntry>): Promise<DiaryEntry | null> => {
-  const updateExpression: string[] = [];
-  const expressionAttributeNames: Record<string, string> = {};
-  const expressionAttributeValues: Record<string, any> = {};
-
-  Object.entries(updates).forEach(([key, value]) => {
-    if (key !== 'id' && key !== 'userId' && key !== 'topicId' && key !== 'createdAt') {
-      updateExpression.push(`#${key} = :${key}`);
-      expressionAttributeNames[`#${key}`] = key;
-      expressionAttributeValues[`:${key}`] = value;
-    }
-  });
-
-  updateExpression.push('#updatedAt = :updatedAt');
-  expressionAttributeNames['#updatedAt'] = 'updatedAt';
-  expressionAttributeValues[':updatedAt'] = new Date().toISOString();
-
-  const result = await docClient.send(new UpdateCommand({
-    TableName: ENTRIES_TABLE,
-    Key: { id: entryId },
-    UpdateExpression: `SET ${updateExpression.join(', ')}`,
-    ExpressionAttributeNames: expressionAttributeNames,
-    ExpressionAttributeValues: expressionAttributeValues,
-    ReturnValues: 'ALL_NEW',
-  }));
-
-  return result.Attributes as DiaryEntry || null;
-};
-
-export const deleteDiaryEntry = async (entryId: string): Promise<void> => {
-  await docClient.send(new DeleteCommand({
-    TableName: ENTRIES_TABLE,
-    Key: { id: entryId },
-  }));
-};
 
 // Delete user and all associated data
 export const deleteUser = async (userId: string): Promise<void> => {
@@ -268,15 +191,16 @@ export const deleteUserTopics = async (userId: string): Promise<void> => {
   }
 };
 
-export const deleteUserEntries = async (userId: string): Promise<void> => {
-  // First, get all user entries
-  const userEntries = await getUserEntries(userId);
-  
-  // Delete each entry
-  for (const entry of userEntries) {
-    await docClient.send(new DeleteCommand({
-      TableName: ENTRIES_TABLE,
-      Key: { id: entry.id },
-    }));
-  }
-};
+
+
+
+
+
+
+
+
+
+
+
+
+

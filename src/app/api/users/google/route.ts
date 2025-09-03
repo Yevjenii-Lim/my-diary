@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { initializeUserEncryption } from '@/lib/encryption-keys';
 
+// Initialize DynamoDB client
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION || 'us-east-1',
-  // Use IAM role when deployed, fallback to credentials for local development
-  ...(process.env.NODE_ENV === 'production' ? {} : {
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-    },
-  }),
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
 });
 
 const docClient = DynamoDBDocumentClient.from(client);
-const USERS_TABLE = process.env.DYNAMODB_USERS_TABLE || 'diary-users';
+
+// Table names
+const USERS_TABLE = process.env.USERS_TABLE || 'diary-users';
 
 // GET: Check if Google user exists
 export async function GET(request: NextRequest) {
@@ -119,6 +120,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User already exists' }, { status: 409 });
     }
 
+    // Initialize encryption for the new user
+    console.log(`🔐 Initializing encryption for new Google user: ${userId}`);
+    const encryptionSecret = await initializeUserEncryption(userId);
+    console.log(`✅ Encryption initialized for Google user: ${userId}`);
+
     // Create new user
     const putCommand = new PutCommand({
       TableName: USERS_TABLE,
@@ -141,7 +147,8 @@ export async function POST(request: NextRequest) {
         createdAt: userData.createdAt,
         updatedAt: userData.updatedAt,
       },
-      message: 'Google user account created successfully',
+      message: 'Google user account created successfully with encryption enabled',
+      encryptionStatus: 'initialized'
     }, { status: 201 });
 
   } catch (error) {

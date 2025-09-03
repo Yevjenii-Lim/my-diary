@@ -29,8 +29,8 @@ interface WritingSuggestion {
   title: string;
   description: string;
   prompt: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  estimatedTime: number;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  estimatedTime?: number;
   tags: string[];
   confidence?: number;
   reasoning?: string;
@@ -46,6 +46,7 @@ export default function TopicPage({ params }: TopicPageProps) {
   const [topicStats, setTopicStats] = useState<TopicStats | null>(null);
   const [suggestions, setSuggestions] = useState<WritingSuggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
   const [activeTab, setActiveTab] = useState<'overview' | 'entries' | 'suggestions' | 'analytics'>('overview');
   const [showNewEntryForm, setShowNewEntryForm] = useState(false);
   const [newEntryTitle, setNewEntryTitle] = useState('');
@@ -167,7 +168,7 @@ export default function TopicPage({ params }: TopicPageProps) {
     try {
       // Call the AI suggestions API with cache-busting
       const timestamp = Date.now();
-      const response = await fetch(`/api/ai-suggestions?userId=${user.id}&topicTitle=${encodeURIComponent(topic.title)}&topicDescription=${encodeURIComponent(topic.description)}&_t=${timestamp}`);
+      const response = await fetch(`/api/ai-suggestions?userId=${user.id}&topicTitle=${encodeURIComponent(topic.title)}&topicDescription=${encodeURIComponent(topic.description)}&language=${selectedLanguage}&_t=${timestamp}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -190,8 +191,6 @@ export default function TopicPage({ params }: TopicPageProps) {
         title: 'Deep Reflection',
         description: 'Take a deeper look at your experiences with this topic',
         prompt: `Reflect on your journey with ${topic.title.toLowerCase()}. What patterns do you notice? What has changed over time? What insights have you gained?`,
-        difficulty: 'intermediate',
-        estimatedTime: 20,
         tags: ['reflection', 'insights', 'patterns'],
         confidence: 0.7,
         reasoning: 'Fallback suggestion based on topic analysis'
@@ -201,8 +200,6 @@ export default function TopicPage({ params }: TopicPageProps) {
         title: 'Future Vision',
         description: 'Imagine where you want to be with this topic in the future',
         prompt: `Where do you see yourself with ${topic.title.toLowerCase()} in 6 months? What would success look like? What steps can you take to get there?`,
-        difficulty: 'intermediate',
-        estimatedTime: 15,
         tags: ['planning', 'goals', 'future'],
         confidence: 0.7,
         reasoning: 'Fallback suggestion based on topic analysis'
@@ -212,8 +209,6 @@ export default function TopicPage({ params }: TopicPageProps) {
         title: 'Challenge Exploration',
         description: 'Explore the challenges you face with this topic',
         prompt: `What are the biggest challenges you face with ${topic.title.toLowerCase()}? What makes them difficult? How might you approach them differently?`,
-        difficulty: 'advanced',
-        estimatedTime: 18,
         tags: ['challenges', 'problem-solving', 'growth'],
         confidence: 0.7,
         reasoning: 'Fallback suggestion based on topic analysis'
@@ -307,16 +302,22 @@ export default function TopicPage({ params }: TopicPageProps) {
 
   // Filter and sort entries
   const filteredAndSortedEntries = entries
-    .filter(entry => 
-      entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.content.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    .filter(entry => {
+      // Safety check: ensure entry has valid title and content
+      if (!entry.title || !entry.content) {
+        console.warn('Entry missing title or content:', entry);
+        return false;
+      }
+      
+      return entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             entry.content.toLowerCase().includes(searchTerm.toLowerCase());
+    })
     .sort((a, b) => {
       switch (sortBy) {
         case 'date':
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case 'title':
-          return a.title.localeCompare(b.title);
+          return (a.title || '').localeCompare(b.title || '');
         case 'length':
           return (b.wordCount || 0) - (a.wordCount || 0);
         default:
@@ -324,14 +325,55 @@ export default function TopicPage({ params }: TopicPageProps) {
       }
     });
 
+  // Show loading state while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
+          <div className="text-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-6"></div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Loading Topic...</h2>
+            <p className="text-gray-600">Fetching your writing data and AI suggestions</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
+          <div className="text-center py-20">
+            <div className="text-6xl mb-6">⚠️</div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Error Loading Topic</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <Link href="/new-entry" className="text-blue-600 hover:text-blue-700 font-medium">
+              ← Back to Topics
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show "Topic Not Found" only after loading is complete and topic is still not found
   if (!topic) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Topic Not Found</h1>
-          <Link href="/new-entry" className="text-blue-600 hover:text-blue-700">
-            Back to Topics
-          </Link>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
+          <div className="text-center py-20">
+            <div className="text-6xl mb-6">🔍</div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Topic Not Found</h2>
+            <p className="text-gray-600 mb-6">The topic you're looking for doesn't exist or you don't have access to it.</p>
+            <Link href="/new-entry" className="text-blue-600 hover:text-blue-700 font-medium">
+              ← Back to Topics
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -592,26 +634,29 @@ export default function TopicPage({ params }: TopicPageProps) {
                 <p className="text-gray-600 text-center py-8">No entries yet. Start writing to see them here!</p>
               ) : (
                 <div className="space-y-4">
-                  {entries.slice(0, 3).map((entry) => (
-                    <div key={entry.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-gray-900">{entry.title}</h3>
-                        <span className="text-sm text-gray-500">
-                          {new Date(entry.createdAt).toLocaleDateString()}
-                        </span>
+                  {entries
+                    .filter(entry => entry && entry.id) // Filter out invalid entries
+                    .slice(0, 3)
+                    .map((entry) => (
+                      <div key={entry.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-semibold text-gray-900">{entry.title}</h3>
+                          <span className="text-sm text-gray-500">
+                            {new Date(entry.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 text-sm line-clamp-2">{entry.content}</p>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-xs text-gray-500">{entry.wordCount} words</span>
+                          <Link
+                            href={`/entries/${entry.id}`}
+                            className="text-blue-600 hover:text-blue-700 text-xs font-medium"
+                          >
+                            Read Full Entry
+                          </Link>
+                        </div>
                       </div>
-                      <p className="text-gray-600 text-sm line-clamp-2">{entry.content}</p>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-xs text-gray-500">{entry.wordCount} words</span>
-                        <Link
-                          href={`/entries/${entry.id}`}
-                          className="text-blue-600 hover:text-blue-700 text-xs font-medium"
-                        >
-                          Read Full Entry
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
@@ -755,26 +800,28 @@ export default function TopicPage({ params }: TopicPageProps) {
               </div>
             ) : (
               <div className="space-y-4 sm:space-y-6">
-                {filteredAndSortedEntries.map((entry) => (
-                  <div key={entry.id} className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 sm:mb-4 space-y-2 sm:space-y-0">
-                      <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{entry.title}</h3>
-                      <span className="text-xs sm:text-sm text-gray-500">
-                        {new Date(entry.createdAt).toLocaleDateString()}
-                      </span>
+                {filteredAndSortedEntries
+                  .filter(entry => entry && entry.id) // Filter out invalid entries
+                  .map((entry) => (
+                    <div key={entry.id} className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 sm:mb-4 space-y-2 sm:space-y-0">
+                        <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{entry.title}</h3>
+                        <span className="text-xs sm:text-sm text-gray-500">
+                          {new Date(entry.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 mb-3 sm:mb-4 line-clamp-3 text-sm sm:text-base">{entry.content}</p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs sm:text-sm text-gray-500">{entry.wordCount} words</span>
+                        <Link
+                          href={`/entries/${entry.id}`}
+                          className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium"
+                        >
+                          Read Full Entry →
+                        </Link>
+                      </div>
                     </div>
-                    <p className="text-gray-700 mb-3 sm:mb-4 line-clamp-3 text-sm sm:text-base">{entry.content}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs sm:text-sm text-gray-500">{entry.wordCount} words</span>
-                      <Link
-                        href={`/entries/${entry.id}`}
-                        className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium"
-                      >
-                        Read Full Entry →
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </div>
@@ -783,9 +830,31 @@ export default function TopicPage({ params }: TopicPageProps) {
         {activeTab === 'suggestions' && (
           <div className="space-y-4 sm:space-y-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
-              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">AI Writing Suggestions</h2>
-              <div className="flex items-center space-x-3">
-                <button
+                              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">AI Writing Suggestions</h2>
+                <div className="flex items-center space-x-3">
+                  {/* Language Selector */}
+                  <select
+                    value={selectedLanguage || 'en'}
+                    onChange={(e) => {
+                      setSelectedLanguage(e.target.value);
+                      setSuggestions([]); // Clear existing suggestions when language changes
+                    }}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-black hover:border-gray-400 transition-colors"
+                  >
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="fr">🇫🇷 Français</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                    <option value="ko">🇰🇷 한국어</option>
+                    <option value="zh">🇨🇳 中文</option>
+                    <option value="pt">🇵🇹 Português</option>
+                    <option value="it">🇮🇹 Italiano</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                    <option value="uk">🇺🇦 Українська</option>
+                  </select>
+                  <button
                   onClick={async () => {
                     if (topic) {
                       setSuggestionsLoading(true);
@@ -865,9 +934,11 @@ export default function TopicPage({ params }: TopicPageProps) {
                   </div>
                   
                   <div className="flex items-center space-x-4 mb-6">
-                    <span className="text-sm text-gray-500">⏱️ {suggestions[0].estimatedTime} min</span>
+                    {suggestions[0].estimatedTime && (
+                      <span className="text-sm text-gray-500">⏱️ {suggestions[0].estimatedTime} min</span>
+                    )}
                     <div className="flex space-x-2">
-                      {suggestions[0].tags.map((tag) => (
+                      {suggestions[0].tags && suggestions[0].tags.length > 0 && suggestions[0].tags.map((tag) => (
                         <span key={tag} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                           {tag}
                         </span>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserEntries } from '@/lib/dynamodb';
+import { getUserEncryptedEntries, ensureUserEncryption } from '@/lib/dynamodb-encrypted';
 
 export async function GET(
   request: NextRequest,
@@ -18,8 +18,18 @@ export async function GET(
       return NextResponse.json({ error: 'Topic ID is required' }, { status: 400 });
     }
 
-    const entries = await getUserEntries(userId, topicId);
-    return NextResponse.json({ entries });
+    console.log(`🔐 Fetching and decrypting entries for topic: ${topicId}, user: ${userId}`);
+    
+    const userEncryptionSecret = await ensureUserEncryption(userId);
+    const decryptedEntries = await getUserEncryptedEntries(userId, userEncryptionSecret, topicId);
+    
+    console.log(`✅ Successfully decrypted ${decryptedEntries.length} entries for topic: ${topicId}`);
+    
+    return NextResponse.json({ 
+      entries: decryptedEntries,
+      encryptionStatus: 'decrypted',
+      totalEntries: decryptedEntries.length
+    });
   } catch (error) {
     console.error('Error fetching entries by topic:', error);
     return NextResponse.json({ error: 'Failed to fetch entries' }, { status: 500 });

@@ -54,13 +54,13 @@ export default function NewEntry() {
       if (response.ok) {
         const data = await response.json();
         const statsMap: Record<string, number> = {};
-        data.topicStats.forEach((stat: { topicId: string; entryCount: number }) => {
-          statsMap[stat.topicId] = stat.entryCount;
+        data.topics.forEach((topic: { topicId: string; entryCount: number }) => {
+          statsMap[topic.topicId] = topic.entryCount;
         });
         setTopicStats(statsMap);
       }
     } catch (error) {
-      // Error fetching topic stats
+      console.error('Error fetching topic stats:', error);
     } finally {
       setStatsLoading(false);
     }

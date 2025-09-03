@@ -160,3 +160,4 @@ const result = await resendConfirmationCode(email);
 
 **Your diary app now has a complete, secure email confirmation flow that ensures all users have verified email addresses!** 📧✅
 
+

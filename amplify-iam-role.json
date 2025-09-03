@@ -18,8 +18,8 @@
         "arn:aws:dynamodb:us-east-1:*:table/diary-users/index/*",
         "arn:aws:dynamodb:us-east-1:*:table/diary-topics",
         "arn:aws:dynamodb:us-east-1:*:table/diary-topics/index/*",
-        "arn:aws:dynamodb:us-east-1:*:table/diary-entries",
-        "arn:aws:dynamodb:us-east-1:*:table/diary-entries/index/*"
+        "arn:aws:dynamodb:us-east-1:*:table/diary-entries-encrypted",
+        "arn:aws:dynamodb:us-east-1:*:table/diary-entries-encrypted/index/*"
       ]
     }
   ]

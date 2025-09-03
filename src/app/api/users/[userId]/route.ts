@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteUser, deleteUserTopics, deleteUserEntries } from '@/lib/dynamodb';
+import { deleteUser, deleteUserTopics } from '@/lib/dynamodb';
+import { deleteUserEntries } from '@/lib/dynamodb-encrypted';
 import { deleteCognitoUser } from '@/lib/cognito';
 
 export async function DELETE(
@@ -44,4 +45,5 @@ export async function DELETE(
     }, { status: 500 });
   }
 }
+
 

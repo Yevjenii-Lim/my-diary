@@ -1,68 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, UpdateCommand, DeleteCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { getEncryptedDiaryEntry, updateEncryptedDiaryEntry, deleteEncryptedDiaryEntry, ensureUserEncryption } from '@/lib/dynamodb-encrypted';
 
-const client = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  // Use IAM role when deployed, fallback to credentials for local development
-  ...(process.env.NODE_ENV === 'production' ? {} : {
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-    },
-  }),
-});
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ entryId: string }> }
+) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const { entryId } = await params;
 
-const docClient = DynamoDBDocumentClient.from(client);
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    if (!entryId) {
+      return NextResponse.json({ error: 'Entry ID is required' }, { status: 400 });
+    }
+
+    console.log(`🔐 Fetching and decrypting entry: ${entryId}`);
+    
+    const userEncryptionSecret = await ensureUserEncryption(userId);
+    const decryptedEntry = await getEncryptedDiaryEntry(entryId, userEncryptionSecret);
+    
+    if (!decryptedEntry) {
+      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
+    }
+    
+    console.log(`✅ Successfully decrypted entry: ${entryId}`);
+    
+    return NextResponse.json({ 
+      entry: decryptedEntry,
+      encryptionStatus: 'decrypted'
+    });
+  } catch (error) {
+    console.error('Error fetching/decrypting entry:', error);
+    return NextResponse.json({ error: 'Failed to fetch entry' }, { status: 500 });
+  }
+}
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ entryId: string }> }
 ) {
   try {
-    const resolvedParams = await params;
     const body = await request.json();
     const { userId, title, content } = body;
+    const { entryId } = await params;
 
     if (!userId || !title || !content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const wordCount = content.trim().split(/\s+/).length;
-    const updatedAt = new Date().toISOString();
 
-    // Extract the actual entryId from the composite id
-    const fullCompositeId = resolvedParams.entryId;
-    const actualEntryId = fullCompositeId.replace(`${userId}-`, '');
+    console.log(`🔐 Updating encrypted entry: ${entryId}`);
+    console.log(`📝 Update details: title="${title}", content="${content.substring(0, 50)}...", wordCount=${wordCount}`);
 
-    console.log(`✏️ API: Updating entry with userId: ${userId}, entryId: ${actualEntryId}`);
+    // Get the user's encryption secret
+    console.log('🔑 Getting user encryption secret...');
+    const userEncryptionSecret = await ensureUserEncryption(userId);
+    console.log('✅ User encryption secret retrieved');
 
-    // Update the entry using the correct composite key
-    const updateCommand = new UpdateCommand({
-      TableName: process.env.DYNAMODB_ENTRIES_TABLE || 'diary-entries',
-      Key: {
-        userId: userId,
-        entryId: actualEntryId,
-      },
-      UpdateExpression: 'SET title = :title, content = :content, wordCount = :wordCount, updatedAt = :updatedAt',
-      ExpressionAttributeValues: {
-        ':title': title,
-        ':content': content,
-        ':wordCount': wordCount,
-        ':updatedAt': updatedAt,
-      },
-      ReturnValues: 'ALL_NEW',
+    // Update encrypted diary entry
+    console.log('🔒 Updating encrypted diary entry...');
+    const updatedEntry = await updateEncryptedDiaryEntry(entryId, {
+      title,
+      content,
+      wordCount,
+    }, userEncryptionSecret);
+
+    if (!updatedEntry) {
+      return NextResponse.json({ error: 'Entry not found or failed to update' }, { status: 404 });
+    }
+
+    console.log('✅ Encrypted diary entry updated successfully');
+    return NextResponse.json({ entry: updatedEntry });
+  } catch (error: any) {
+    console.error('❌ Error updating entry:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error details:', {
+      name: error.name,
+      message: error.message,
+      cause: error.cause
     });
-
-    const result = await docClient.send(updateCommand);
-
     return NextResponse.json({ 
-      entry: result.Attributes,
-      message: 'Entry updated successfully' 
-    });
-  } catch (error) {
-    console.error('Error updating entry:', error);
-    return NextResponse.json({ error: 'Failed to update entry' }, { status: 500 });
+      error: 'Failed to update entry',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }
 
@@ -71,80 +97,27 @@ export async function DELETE(
   { params }: { params: Promise<{ entryId: string }> }
 ) {
   try {
-    const resolvedParams = await params;
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const { entryId } = await params;
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Extract the actual entryId from the composite id
-    // The entryId parameter contains the full composite id: userId-entryId
-    // We need to extract just the entryId part
-    const fullCompositeId = resolvedParams.entryId;
-    const actualEntryId = fullCompositeId.replace(`${userId}-`, '');
+    if (!entryId) {
+      return NextResponse.json({ error: 'Entry ID is required' }, { status: 400 });
+    }
 
-    console.log(`🗑️ API: Deleting entry with userId: ${userId}, entryId: ${actualEntryId}`);
-
-    // Delete the entry using the correct composite key
-    const deleteCommand = new DeleteCommand({
-      TableName: process.env.DYNAMODB_ENTRIES_TABLE || 'diary-entries',
-      Key: {
-        userId: userId,
-        entryId: actualEntryId,
-      },
-    });
-
-    await docClient.send(deleteCommand);
-
-    return NextResponse.json({ 
-      message: 'Entry deleted successfully',
-      deletedEntryId: actualEntryId 
-    });
+    console.log(`🗑️ Deleting entry: ${entryId}`);
+    
+    // Delete the encrypted diary entry
+    await deleteEncryptedDiaryEntry(entryId);
+    console.log('✅ Entry deleted successfully');
+    
+    return NextResponse.json({ message: 'Entry deleted successfully' });
   } catch (error) {
     console.error('Error deleting entry:', error);
     return NextResponse.json({ error: 'Failed to delete entry' }, { status: 500 });
-  }
-}
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ entryId: string }> }
-) {
-  try {
-    const resolvedParams = await params;
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-    }
-
-    // Extract the actual entryId from the composite id
-    const fullCompositeId = resolvedParams.entryId;
-    const actualEntryId = fullCompositeId.replace(`${userId}-`, '');
-
-    console.log(`📖 API: Getting entry with userId: ${userId}, entryId: ${actualEntryId}`);
-
-    // Get the entry using the correct composite key
-    const getCommand = new GetCommand({
-      TableName: process.env.DYNAMODB_ENTRIES_TABLE || 'diary-entries',
-      Key: {
-        userId: userId,
-        entryId: actualEntryId,
-      },
-    });
-
-    const result = await docClient.send(getCommand);
-
-    if (!result.Item) {
-      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ entry: result.Item });
-  } catch (error) {
-    console.error('Error fetching entry:', error);
-    return NextResponse.json({ error: 'Failed to fetch entry' }, { status: 500 });
   }
 }

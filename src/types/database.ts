@@ -1,7 +1,11 @@
+import { EncryptedData } from '@/lib/encryption';
+
 export interface User {
   id: string;
   email: string;
   name: string;
+  encryptionSecret: string; // Hash of user's encryption key
+  encryptionSalt: string; // Salt for encryption key derivation
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +43,20 @@ export interface DiaryEntry {
   topicId: string;
   title: string;
   content: string;
+  wordCount: number;
+  createdAt: string;
+  updatedAt: string;
+  isPartiallyDecrypted?: boolean; // Flag to indicate if entry couldn't be fully decrypted
+}
+
+// New interface for encrypted diary entries
+export interface EncryptedDiaryEntry {
+  id: string;
+  userId: string;
+  entryId: string;
+  topicId: string;
+  encryptedTitle: EncryptedData;
+  encryptedContent: EncryptedData;
   wordCount: number;
   createdAt: string;
   updatedAt: string;

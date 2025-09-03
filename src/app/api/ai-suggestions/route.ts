@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const topicTitle = searchParams.get('topicTitle');
     const topicDescription = searchParams.get('topicDescription');
+    const language = searchParams.get('language') || 'en'; // Default to English
 
     if (!userId || !topicTitle) {
       return NextResponse.json({ 
@@ -22,12 +23,15 @@ export async function GET(request: NextRequest) {
     const suggestions = await getAISuggestions(
       userId, 
       topicTitle, 
-      topicDescription || ''
+      topicDescription || '',
+      [], // recentEntries
+      language
     );
 
     return NextResponse.json({ 
       suggestions,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
+      language
     });
 
   } catch (error) {

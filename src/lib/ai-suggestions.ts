@@ -4,8 +4,8 @@ export interface WritingSuggestion {
   title: string;
   description: string;
   prompt: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  estimatedTime: number;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  estimatedTime?: number;
   tags: string[];
   confidence: number;
   reasoning: string;
@@ -266,7 +266,8 @@ export async function generateAISuggestions(
   userProfile: UserWritingProfile, 
   topicTitle: string, 
   topicDescription: string,
-  recentEntries: any[] = []
+  recentEntries: any[] = [],
+  language: string = 'en'
 ): Promise<WritingSuggestion[]> {
   try {
     const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -276,7 +277,7 @@ export async function generateAISuggestions(
     }
 
     // Prepare context for AI
-    const context = buildAIContext(userProfile, topicTitle, topicDescription, recentEntries);
+    const context = buildAIContext(userProfile, topicTitle, topicDescription, recentEntries, language);
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -291,6 +292,8 @@ export async function generateAISuggestions(
             role: 'system',
             content: `You are an expert writing coach and journaling specialist. Your job is to generate personalized writing prompts and suggestions for users based on their writing history and preferences.
 
+IMPORTANT: Generate the suggestion in ${language === 'en' ? 'English' : language === 'es' ? 'Spanish' : language === 'fr' ? 'French' : language === 'de' ? 'German' : language === 'ja' ? 'Japanese' : language === 'ko' ? 'Korean' : language === 'zh' ? 'Chinese' : language === 'pt' ? 'Portuguese' : language === 'it' ? 'Italian' : language === 'ru' ? 'Russian' : language === 'pl' ? 'Polish' : language === 'uk' ? 'Ukrainian' : 'English'}.
+
 Generate 1 high-quality writing suggestion that is:
 1. Personalized to the user's writing style and patterns
 2. Relevant to the specific topic they're writing about
@@ -299,17 +302,14 @@ Generate 1 high-quality writing suggestion that is:
 5. Specific enough to be actionable
 6. DIFFERENT from previous suggestions - be creative and varied
 7. The best possible suggestion for this user and topic
-
-IMPORTANT: Each time you generate a suggestion, make it unique and different. Vary the approach, angle, perspective, or focus area. Don't repeat similar suggestions.
+8. Written in the specified language (${language})
 
 The suggestion should include:
-- A compelling title
-- A description (this is the main writing instruction for the user)
-- Difficulty level
-- Estimated time (5-30 minutes)
+- A compelling title (in ${language})
+- A description (this is the main writing instruction for the user, in ${language}) 
 - Relevant tags
 - Confidence level (0.1-1.0)
-- Brief reasoning for why this suggestion fits the user
+- Brief reasoning for why this suggestion fits the user (in ${language})
 
 Format your response as a JSON array with exactly one suggestion object.`
           },
@@ -318,7 +318,7 @@ Format your response as a JSON array with exactly one suggestion object.`
             content: context
           }
         ],
-        temperature: 0.9,
+        temperature: 0.7,
         max_tokens: 1500
       })
     });
@@ -342,8 +342,6 @@ Format your response as a JSON array with exactly one suggestion object.`
               title: suggestion.title,
               description: suggestion.description,
               prompt: suggestion.prompt || suggestion.description || suggestion.reasoning, // Use description or reasoning as fallback
-              difficulty: suggestion.difficulty || 'intermediate',
-              estimatedTime: suggestion.estimatedTime || 15,
               tags: suggestion.tags || [],
               confidence: suggestion.confidence || 0.8,
               reasoning: suggestion.reasoning || 'AI-generated suggestion based on your writing patterns'
@@ -364,12 +362,26 @@ function buildAIContext(
   userProfile: UserWritingProfile, 
   topicTitle: string, 
   topicDescription: string,
-  recentEntries: any[]
+  recentEntries: any[],
+  language: string = 'en'
 ): string {
   const recentContent = recentEntries
     .slice(0, 3)
     .map(entry => `${entry.title}: ${entry.content.substring(0, 200)}...`)
     .join('\n\n');
+
+      const languageName = language === 'en' ? 'English' : 
+                      language === 'es' ? 'Spanish' : 
+                      language === 'fr' ? 'French' : 
+                      language === 'de' ? 'German' : 
+                      language === 'ja' ? 'Japanese' : 
+                      language === 'ko' ? 'Korean' : 
+                      language === 'zh' ? 'Chinese' : 
+                      language === 'pt' ? 'Portuguese' : 
+                      language === 'it' ? 'Italian' : 
+                      language === 'ru' ? 'Russian' : 
+                      language === 'pl' ? 'Polish' : 
+                      language === 'uk' ? 'Ukrainian' : 'English';
 
   return `User Profile:
 - Total entries: ${userProfile.totalEntries}
@@ -383,6 +395,7 @@ function buildAIContext(
 
 Topic: ${topicTitle}
 Description: ${topicDescription}
+Target Language: ${languageName} (${language})
 
 Recent entries (for context):
 ${recentContent || 'No recent entries'}
@@ -390,7 +403,7 @@ ${recentContent || 'No recent entries'}
 Request timestamp: ${new Date().toISOString()}
 Random seed: ${Math.random().toString(36).substring(2, 15)}
 
-Please generate a UNIQUE and DIFFERENT personalized writing suggestion for this user and topic. Make it creative and varied from previous suggestions.`;
+Please generate a UNIQUE and DIFFERENT personalized writing suggestion for this user and topic in ${languageName}. Make it creative and varied from previous suggestions.`;
 }
 
 // Fallback suggestions when AI is not available
@@ -401,8 +414,6 @@ function generateFallbackSuggestions(topicTitle: string, topicDescription: strin
       title: 'Deep Reflection',
       description: 'Take a deeper look at your experiences with this topic',
       prompt: `Reflect on your journey with ${topicTitle.toLowerCase()}. What patterns do you notice? What has changed over time? What insights have you gained?`,
-      difficulty: 'intermediate',
-      estimatedTime: 20,
       tags: ['reflection', 'insights', 'patterns'],
       confidence: 0.7,
       reasoning: 'Fallback suggestion based on topic analysis'
@@ -415,14 +426,15 @@ export async function getAISuggestions(
   userId: string, 
   topicTitle: string, 
   topicDescription: string,
-  recentEntries: any[] = []
+  recentEntries: any[] = [],
+  language: string = 'en'
 ): Promise<WritingSuggestion[]> {
   try {
     // Analyze user's writing history
     const userProfile = await analyzeUserWritingHistory(userId);
     
     // Generate AI suggestions
-    const suggestions = await generateAISuggestions(userProfile, topicTitle, topicDescription, recentEntries);
+    const suggestions = await generateAISuggestions(userProfile, topicTitle, topicDescription, recentEntries, language);
     
     return suggestions;
     

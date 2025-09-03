@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserTopics, getUserEntries } from '@/lib/dynamodb';
+import { getUserTopics } from '@/lib/dynamodb';
+import { countUserEntriesByTopic } from '@/lib/dynamodb-encrypted';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,24 +11,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Get all user topics
     const topics = await getUserTopics(userId);
     
-    // Get entry counts for each topic
-    const topicStats = await Promise.all(
-      topics.map(async (topic) => {
-        const entries = await getUserEntries(userId, topic.topicId);
-        return {
-          topicId: topic.topicId,
-          entryCount: entries.length,
-        };
-      })
-    );
+    // Efficiently count entries for each topic without decryption
+    const topicEntryCounts = await countUserEntriesByTopic(userId);
+    
+    // Calculate overall stats
+    const totalEntries = Array.from(topicEntryCounts.values()).reduce((sum, count) => sum + count, 0);
+    
+    // For now, we'll provide basic counts without detailed analytics
+    // Detailed analytics would require decryption, but we can add that later if needed
+    const averageWordsPerEntry = 0; // Would need decryption to calculate
+    const currentStreak = 0; // Would need decryption to calculate
+    const longestStreak = 0; // Would need decryption to calculate
+    const mostActiveDay = null; // Would need decryption to calculate
+    const averageEntriesPerWeek = 0; // Would need decryption to calculate
 
-    return NextResponse.json({ topicStats });
+    return NextResponse.json({
+      topics: topics.map(topic => ({
+        ...topic,
+        entryCount: topicEntryCounts.get(topic.topicId) || 0
+      })),
+      overallStats: {
+        totalTopics: topics.length,
+        totalEntries,
+        totalWords: 0, // Would need decryption to calculate
+        averageWordsPerEntry,
+        currentStreak,
+        longestStreak,
+        lastEntryDate: null, // Would need decryption to calculate
+        mostActiveDay,
+        averageEntriesPerWeek
+      }
+    });
   } catch (error) {
-    console.error('Error fetching topic stats:', error);
-    return NextResponse.json({ error: 'Failed to fetch topic stats' }, { status: 500 });
+    console.error('Error fetching topics stats:', error);
+    return NextResponse.json({ error: 'Failed to fetch topics stats' }, { status: 500 });
   }
 }
 

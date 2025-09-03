@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createUser, getUser } from '@/lib/dynamodb';
+import { initializeUserEncryption } from '@/lib/encryption-keys';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,6 +23,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Initialize encryption for the new user
+    console.log(`🔐 Initializing encryption for new user: ${id}`);
+    const encryptionSecret = await initializeUserEncryption(id);
+    console.log(`✅ Encryption initialized for user: ${id}`);
+
     // Create the user
     const user = await createUser({
       id,
@@ -31,12 +37,13 @@ export async function POST(request: NextRequest) {
 
     // Note: Users now start with empty topics list
     // They can add topics manually via the UI
-    console.log(`✅ Created new user: ${name} (${id}) with empty topics list`);
+    console.log(`✅ Created new user: ${name} (${id}) with empty topics list and encryption enabled`);
 
     return NextResponse.json(
       { 
-        message: 'User created successfully with empty topics list',
-        user 
+        message: 'User created successfully with empty topics list and encryption enabled',
+        user,
+        encryptionStatus: 'initialized'
       },
       { status: 201 }
     );

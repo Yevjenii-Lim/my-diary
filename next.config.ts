@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
   swcMinify: true,
   // Ensure proper asset loading in production
   trailingSlash: false,
+  // Suppress hydration mismatch warnings from browser extensions
+  onDemandEntries: {
+    // This helps with hydration mismatches from browser extensions
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
   // Ensure environment variables are available at build time
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
