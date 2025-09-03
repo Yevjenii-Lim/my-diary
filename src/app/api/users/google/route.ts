@@ -58,12 +58,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorName = error instanceof Error ? error.name : 'Unknown';
+    const errorStack = error instanceof Error ? error.stack : 'No stack trace';
+    
     console.error('❌ Error checking Google user:', error);
     console.error('❌ Error details:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
+      message: errorMessage,
+      name: errorName,
+      stack: errorStack,
       region: process.env.AWS_REGION,
       tableName: USERS_TABLE,
       hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
@@ -71,7 +75,7 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json({ 
       error: 'Internal server error',
-      details: error.message 
+      details: errorMessage 
     }, { status: 500 });
   }
 }

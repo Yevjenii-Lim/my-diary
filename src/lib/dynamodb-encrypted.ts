@@ -87,16 +87,31 @@ export const getEncryptedDiaryEntry = async (
   try {
     // Parse the composite entryId to extract userId and actual entryId
     // Format: userId-topicId-timestamp
-    // userId is a UUID with format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
+    // userId can be either:
+    // - UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
+    // - Google OAuth format: google_timestamp_random (3 parts)
     const parts = entryId.split('-');
-    if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
-      console.error(`❌ Invalid entryId format: ${entryId}`);
-      return null;
-    }
     
-    // Extract userId (first 5 parts for UUID) and actual entryId (remainder)
-    const userId = parts.slice(0, 5).join('-');
-    const actualEntryId = parts.slice(5).join('-');
+    let userId: string;
+    let actualEntryId: string;
+    
+    if (parts[0] === 'google') {
+      // Google OAuth user ID format: google_timestamp_random-topicId-timestamp
+      if (parts.length < 4) { // At least 4 parts: 3 for google ID + 1 for topicId + 1 for timestamp
+        console.error(`❌ Invalid Google OAuth entryId format: ${entryId}`);
+        return null;
+      }
+      userId = parts.slice(0, 3).join('-');
+      actualEntryId = parts.slice(3).join('-');
+    } else {
+      // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-topicId-timestamp
+      if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
+        console.error(`❌ Invalid UUID entryId format: ${entryId}`);
+        return null;
+      }
+      userId = parts.slice(0, 5).join('-');
+      actualEntryId = parts.slice(5).join('-');
+    }
     
     console.log(`🔐 Fetching encrypted entry: ${entryId}`);
     console.log(`🔍 Parsed - userId: ${userId}, actualEntryId: ${actualEntryId}`);
@@ -148,15 +163,31 @@ export const updateEncryptedDiaryEntry = async (
   try {
     // Parse the composite entryId
     // Format: userId-topicId-timestamp
-    // userId is a UUID with format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
+    // userId can be either:
+    // - UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
+    // - Google OAuth format: google_timestamp_random (3 parts)
     const parts = entryId.split('-');
-    if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
-      console.error(`❌ Invalid entryId format: ${entryId}`);
-      return null;
-    }
     
-    const userId = parts.slice(0, 5).join('-');
-    const actualEntryId = parts.slice(5).join('-');
+    let userId: string;
+    let actualEntryId: string;
+    
+    if (parts[0] === 'google') {
+      // Google OAuth user ID format: google_timestamp_random-topicId-timestamp
+      if (parts.length < 4) { // At least 4 parts: 3 for google ID + 1 for topicId + 1 for timestamp
+        console.error(`❌ Invalid Google OAuth entryId format: ${entryId}`);
+        return null;
+      }
+      userId = parts.slice(0, 3).join('-');
+      actualEntryId = parts.slice(3).join('-');
+    } else {
+      // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-topicId-timestamp
+      if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
+        console.error(`❌ Invalid UUID entryId format: ${entryId}`);
+        return null;
+      }
+      userId = parts.slice(0, 5).join('-');
+      actualEntryId = parts.slice(5).join('-');
+    }
     
     console.log(`🔐 Updating encrypted entry: ${entryId}`);
     
@@ -215,15 +246,31 @@ export const deleteEncryptedDiaryEntry = async (entryId: string): Promise<boolea
   try {
     // Parse the composite entryId
     // Format: userId-topicId-timestamp
-    // userId is a UUID with format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
+    // userId can be either:
+    // - UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
+    // - Google OAuth format: google_timestamp_random (3 parts)
     const parts = entryId.split('-');
-    if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
-      console.error(`❌ Invalid entryId format: ${entryId}`);
-      return false;
-    }
     
-    const userId = parts.slice(0, 5).join('-');
-    const actualEntryId = parts.slice(5).join('-');
+    let userId: string;
+    let actualEntryId: string;
+    
+    if (parts[0] === 'google') {
+      // Google OAuth user ID format: google_timestamp_random-topicId-timestamp
+      if (parts.length < 4) { // At least 4 parts: 3 for google ID + 1 for topicId + 1 for timestamp
+        console.error(`❌ Invalid Google OAuth entryId format: ${entryId}`);
+        return false;
+      }
+      userId = parts.slice(0, 3).join('-');
+      actualEntryId = parts.slice(3).join('-');
+    } else {
+      // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-topicId-timestamp
+      if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
+        console.error(`❌ Invalid UUID entryId format: ${entryId}`);
+        return false;
+      }
+      userId = parts.slice(0, 5).join('-');
+      actualEntryId = parts.slice(5).join('-');
+    }
     
     console.log(`🗑️ Deleting encrypted entry: ${entryId}`);
     
