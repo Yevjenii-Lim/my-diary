@@ -44,7 +44,7 @@ export const createEncryptedDiaryEntry = async (
     const encryptedEntry: EncryptedDiaryEntry = {
       id: entryId,
       userId,
-      entryId: `${topicId}-${timestamp}`, // Store only topicId-timestamp, not the full entryId
+      entryId: `${topicId}-${timestamp}`, // Store only topicId-timestamp for simple querying
       topicId,
       encryptedTitle: encryptedData.encryptedTitle,
       encryptedContent: encryptedData.encryptedContent,
