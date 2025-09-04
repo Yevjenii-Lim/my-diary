@@ -36,21 +36,25 @@ export default function EntryPage({ params }: EntryPageProps) {
       try {
         setIsLoading(true);
         
-        // Fetch all entries to find the specific one
-        const response = await fetch(`/api/entries?userId=${user.id}`);
+        // Use direct API call to fetch the specific entry
+        console.log(`🔍 Fetching entry with ID: ${resolvedParams.entryId}`);
+        const response = await fetch(`/api/entries/${resolvedParams.entryId}?userId=${user.id}`);
+        console.log(`📡 API response status: ${response.status}`);
+        
         if (response.ok) {
           const data = await response.json();
-          const foundEntry = data.entries.find((e: DiaryEntry) => e.id === resolvedParams.entryId);
+          console.log(`✅ Entry data received:`, data.entry);
+          setEntry(data.entry);
           
-          if (foundEntry) {
-            setEntry(foundEntry);
-            // Find the topic for this entry
-            const entryTopic = userTopics.find(t => t.topicId === foundEntry.topicId);
-            setTopic(entryTopic || null);
-          } else {
-            setError('Entry not found');
-          }
+          // Find the topic for this entry
+          const entryTopic = userTopics.find(t => t.topicId === data.entry.topicId);
+          setTopic(entryTopic || null);
+        } else if (response.status === 404) {
+          console.log(`❌ Entry not found: ${resolvedParams.entryId}`);
+          setError('Entry not found');
         } else {
+          const errorText = await response.text();
+          console.log(`❌ API error: ${response.status} - ${errorText}`);
           setError('Failed to fetch entry');
         }
       } catch (error) {

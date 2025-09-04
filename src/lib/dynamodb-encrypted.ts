@@ -87,18 +87,24 @@ export const getEncryptedDiaryEntry = async (
   try {
     console.log(`🔐 Fetching encrypted entry: ${entryId}`);
     
-    // With new simple format, entryId is already userId-topicId
-    const result = await docClient.send(new GetCommand({
+    // With new format, entryId is userId-topicId-title
+    // We need to query by userId and find the entry with matching entryId
+    const result = await docClient.send(new QueryCommand({
       TableName: ENTRIES_TABLE,
-      Key: { userId, entryId },
+      KeyConditionExpression: 'userId = :userId',
+      FilterExpression: 'entryId = :entryId',
+      ExpressionAttributeValues: {
+        ':userId': userId,
+        ':entryId': entryId,
+      },
     }));
     
-    if (!result.Item) {
+    if (!result.Items || result.Items.length === 0) {
       console.log(`⚠️ Entry not found: ${entryId}`);
       return null;
     }
     
-    const encryptedEntry = result.Item as EncryptedDiaryEntry;
+    const encryptedEntry = result.Items[0] as EncryptedDiaryEntry;
     
     // Get user encryption secret
     const userEncryptionSecret = await getUserEncryptionSecret(userId);
@@ -157,10 +163,26 @@ export const updateEncryptedDiaryEntry = async (
     // Re-encrypt the updated data
     const encryptedData = encryptDiaryEntry(updatedContent, updatedTitle, userId, userEncryptionSecret);
     
-    // Update in DynamoDB
+    // Update in DynamoDB - need to find the entry first
+    const currentEntryResult = await docClient.send(new QueryCommand({
+      TableName: ENTRIES_TABLE,
+      KeyConditionExpression: 'userId = :userId',
+      FilterExpression: 'entryId = :entryId',
+      ExpressionAttributeValues: {
+        ':userId': userId,
+        ':entryId': entryId,
+      },
+    }));
+    
+    if (!currentEntryResult.Items || currentEntryResult.Items.length === 0) {
+      throw new Error('Entry not found for update');
+    }
+    
+    const currentEncryptedEntry = currentEntryResult.Items[0] as EncryptedDiaryEntry;
+    
     await docClient.send(new UpdateCommand({
       TableName: ENTRIES_TABLE,
-      Key: { userId, entryId },
+      Key: { userId, entryId: currentEncryptedEntry.entryId },
       UpdateExpression: 'SET encryptedTitle = :encryptedTitle, encryptedContent = :encryptedContent, updatedAt = :updatedAt',
       ExpressionAttributeValues: {
         ':encryptedTitle': encryptedData.encryptedTitle,
@@ -194,28 +216,29 @@ export const deleteEncryptedDiaryEntry = async (entryId: string, userId: string)
     console.log(`🗑️ Deleting encrypted entry: ${entryId}`);
     console.log(`🗃️ Table: ${ENTRIES_TABLE}`);
     
-    // First, verify the entry exists before deleting
-    try {
-      const getResult = await docClient.send(new GetCommand({
-        TableName: ENTRIES_TABLE,
-        Key: { userId, entryId },
-      }));
-      
-      if (!getResult.Item) {
-        console.error(`❌ Entry not found for deletion: userId=${userId}, entryId=${entryId}`);
-        return false;
-      }
-      
-      console.log(`✅ Entry found, proceeding with deletion`);
-    } catch (getError) {
-      console.error(`❌ Error checking if entry exists:`, getError);
+        // First, verify the entry exists before deleting
+    const getResult = await docClient.send(new QueryCommand({
+      TableName: ENTRIES_TABLE,
+      KeyConditionExpression: 'userId = :userId',
+      FilterExpression: 'entryId = :entryId',
+      ExpressionAttributeValues: {
+        ':userId': userId,
+        ':entryId': entryId,
+      },
+    }));
+    
+    if (!getResult.Items || getResult.Items.length === 0) {
+      console.error(`❌ Entry not found for deletion: userId=${userId}, entryId=${entryId}`);
       return false;
     }
     
-    // Now delete the entry
+    const entryToDelete = getResult.Items[0];
+    console.log(`✅ Entry found, proceeding with deletion`);
+    
+    // Now delete the entry using the correct key structure
     await docClient.send(new DeleteCommand({
       TableName: ENTRIES_TABLE,
-      Key: { userId, entryId },
+      Key: { userId, entryId: entryToDelete.entryId },
     }));
     
     console.log(`✅ Encrypted entry deleted successfully: ${entryId}`);
