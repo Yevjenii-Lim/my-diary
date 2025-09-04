@@ -62,40 +62,61 @@ export default function TopicPage({ params }: TopicPageProps) {
 
   const topic = userTopics.find(t => t.topicId === resolvedParams.topicId);
 
-  // Fetch entries and stats
+  // Fetch entries and stats with retry logic and better dependency management
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return;
+    const fetchData = async (retryCount = 0) => {
+      if (!user || !userTopics.length) return;
 
       try {
         setIsLoading(true);
+        setError(null);
+        
+        console.log(`🔍 Fetching entries for topic: ${resolvedParams.topicId}, user: ${user.id}, attempt: ${retryCount + 1}`);
         
         // Fetch entries
         const entriesResponse = await fetch(`/api/entries/topic/${resolvedParams.topicId}?userId=${user.id}`);
         if (entriesResponse.ok) {
           const data = await entriesResponse.json();
-          setEntries(data.entries);
+          console.log(`✅ Fetched ${data.entries?.length || 0} entries for topic: ${resolvedParams.topicId}`);
+          
+          setEntries(data.entries || []);
           
           // Calculate stats after entries are loaded
-          if (data.entries.length > 0) {
+          if (data.entries && data.entries.length > 0) {
             const stats = calculateTopicStats(data.entries);
             setTopicStats(stats);
+          } else {
+            setTopicStats(null);
           }
-
-          // Don't generate AI suggestions automatically - let user request them
-          // This prevents content from updating in front of the user
+        } else {
+          throw new Error(`HTTP ${entriesResponse.status}: ${entriesResponse.statusText}`);
         }
 
       } catch (error) {
-        console.error('Error fetching topic data:', error);
-        setError('Failed to fetch topic data');
+        console.error(`❌ Error fetching topic data (attempt ${retryCount + 1}):`, error);
+        
+        // Retry logic: retry up to 3 times with exponential backoff
+        if (retryCount < 2) {
+          const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+          console.log(`🔄 Retrying in ${delay}ms...`);
+          
+          setTimeout(() => {
+            fetchData(retryCount + 1);
+          }, delay);
+          return;
+        }
+        
+        setError('Failed to fetch topic data. Please refresh the page.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
-  }, [user, resolvedParams.topicId, topic]);
+    // Only fetch when we have both user and userTopics
+    if (user && userTopics.length > 0) {
+      fetchData();
+    }
+  }, [user, resolvedParams.topicId, userTopics]);
 
   // Calculate topic statistics
   const calculateTopicStats = (entries: DiaryEntry[]): TopicStats => {
@@ -741,18 +762,52 @@ export default function TopicPage({ params }: TopicPageProps) {
             )}
 
             {/* Entries Header */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
-              <div className="flex items-center space-x-4">
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Entries ({entries.length})</h2>
-                {!showNewEntryForm && (
-                  <button
-                    onClick={() => setShowNewEntryForm(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
-                  >
-                    + New Entry
-                  </button>
-                )}
-              </div>
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
+                <div className="flex items-center space-x-4">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Entries ({entries.length})</h2>
+                  <div className="flex items-center space-x-2">
+                    {!showNewEntryForm && (
+                      <button
+                        onClick={() => setShowNewEntryForm(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+                      >
+                        + New Entry
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setIsLoading(true);
+                        setError(null);
+                        // Trigger a fresh fetch
+                        const fetchData = async () => {
+                          try {
+                            const entriesResponse = await fetch(`/api/entries/topic/${resolvedParams.topicId}?userId=${user?.id}`);
+                            if (entriesResponse.ok) {
+                              const data = await entriesResponse.json();
+                              setEntries(data.entries || []);
+                              if (data.entries && data.entries.length > 0) {
+                                const stats = calculateTopicStats(data.entries);
+                                setTopicStats(stats);
+                              } else {
+                                setTopicStats(null);
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Error refreshing entries:', error);
+                            setError('Failed to refresh entries');
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        };
+                        fetchData();
+                      }}
+                      disabled={isLoading}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      🔄 Refresh
+                    </button>
+                  </div>
+                </div>
               
               {/* Search and Sort */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
@@ -778,7 +833,11 @@ export default function TopicPage({ params }: TopicPageProps) {
             {/* Entries List */}
             {isLoading ? (
               <div className="text-center py-12">
-                <p className="text-gray-600">Loading entries...</p>
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  <p className="text-gray-600">Loading entries...</p>
+                  <p className="text-sm text-gray-500">This may take a moment on first load</p>
+                </div>
               </div>
             ) : error ? (
               <div className="text-center py-12">
