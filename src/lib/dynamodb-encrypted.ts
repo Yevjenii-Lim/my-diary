@@ -30,8 +30,8 @@ export const createEncryptedDiaryEntry = async (
   userEncryptionSecret: string
 ): Promise<DiaryEntry> => {
   try {
-    // Create simple entry ID using userId and topicId only (no timestamp)
-    const entryId = `${userId}-${topicId}`;
+    // Create entry ID using userId, topicId, and title for multiple entries per topic
+    const entryId = `${userId}-${topicId}-${title}`;
     const wordCount = content.trim().split(/\s+/).length;
     
     console.log(`🔐 Creating encrypted entry: ${entryId}`);
@@ -44,7 +44,7 @@ export const createEncryptedDiaryEntry = async (
     const encryptedEntry: EncryptedDiaryEntry = {
       id: entryId,
       userId,
-      entryId: entryId, // Store the full userId-topicId for simple querying
+      entryId: entryId, // Store the full userId-topicId-title for unique identification
       topicId,
       encryptedTitle: encryptedData.encryptedTitle,
       encryptedContent: encryptedData.encryptedContent,

@@ -294,6 +294,16 @@ export default function TopicPage({ params }: TopicPageProps) {
     e.preventDefault();
     if (!user || !newEntryTitle.trim() || !newEntryContent.trim()) return;
 
+    // Check if title is unique within this topic
+    const isTitleDuplicate = entries.some(entry => 
+      entry.title.toLowerCase() === newEntryTitle.trim().toLowerCase()
+    );
+
+    if (isTitleDuplicate) {
+      setError('An entry with this title already exists in this topic. Please choose a unique title.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/entries', {
@@ -698,6 +708,9 @@ export default function TopicPage({ params }: TopicPageProps) {
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-gray-900">New Entry</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    💡 Each entry title must be unique within this topic to avoid conflicts.
+                  </p>
                 </div>
                 
                 <form onSubmit={handleSubmitNewEntry} className="space-y-4">
@@ -709,11 +722,30 @@ export default function TopicPage({ params }: TopicPageProps) {
                       type="text"
                       id="title"
                       value={newEntryTitle}
-                      onChange={(e) => setNewEntryTitle(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black placeholder-gray-500"
+                      onChange={(e) => {
+                        setNewEntryTitle(e.target.value);
+                        // Clear any previous error when user starts typing
+                        if (error && error.includes('title already exists')) {
+                          setError(null);
+                        }
+                      }}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black placeholder-gray-500 ${
+                        newEntryTitle.trim() && entries.some(entry => 
+                          entry.title.toLowerCase() === newEntryTitle.trim().toLowerCase()
+                        ) 
+                          ? 'border-red-300 focus:ring-red-500' 
+                          : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                       placeholder="Give your entry a title..."
                       required
                     />
+                    {newEntryTitle.trim() && entries.some(entry => 
+                      entry.title.toLowerCase() === newEntryTitle.trim().toLowerCase()
+                    ) && (
+                      <p className="text-sm text-red-600 mt-1">
+                        ⚠️ This title already exists in this topic. Please choose a unique title.
+                      </p>
+                    )}
                   </div>
                   
                   <div>
@@ -748,7 +780,14 @@ export default function TopicPage({ params }: TopicPageProps) {
                     </button>
                     <button
                       type="submit"
-                      disabled={isSubmitting || !newEntryTitle.trim() || !newEntryContent.trim()}
+                      disabled={
+                        isSubmitting || 
+                        !newEntryTitle.trim() || 
+                        !newEntryContent.trim() ||
+                        entries.some(entry => 
+                          entry.title.toLowerCase() === newEntryTitle.trim().toLowerCase()
+                        )
+                      }
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
                     >
                       {isSubmitting ? (
