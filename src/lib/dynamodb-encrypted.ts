@@ -347,6 +347,12 @@ export const getUserEncryptedEntries = async (
         
         console.log(`✅ GSI query successful, found ${result.Items?.length || 0} entries`);
         
+        // Add small delay to help with GSI consistency
+        if (result.Items && result.Items.length === 0) {
+          console.log(`⚠️ GSI returned 0 entries, waiting 100ms for consistency...`);
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
         if (result.Items) {
           for (const encryptedEntry of result.Items) {
             try {
