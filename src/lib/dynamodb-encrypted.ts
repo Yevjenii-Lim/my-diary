@@ -332,86 +332,49 @@ export const getUserEncryptedEntries = async (
     const entries: DiaryEntry[] = [];
     
     if (topicId) {
-      // Query by topic using GSI
-      try {
-        const result = await docClient.send(new QueryCommand({
-          TableName: ENTRIES_TABLE,
-          IndexName: 'TopicEntriesIndex',
-          KeyConditionExpression: 'topicId = :topicId',
-          FilterExpression: 'userId = :userId',
-          ExpressionAttributeValues: {
-            ':topicId': topicId,
-            ':userId': userId,
-          },
-        }));
+      // Query entries directly by userId and filter by topicId (more reliable than GSI)
+      console.log(`🔍 Querying entries directly by userId: ${userId}, topicId: ${topicId}`);
+      
+      const result = await docClient.send(new QueryCommand({
+        TableName: ENTRIES_TABLE,
+        KeyConditionExpression: 'userId = :userId',
+        ExpressionAttributeValues: {
+          ':userId': userId,
+        },
+      }));
+      
+      console.log(`✅ Direct query successful, found ${result.Items?.length || 0} total entries for user`);
+      
+      // Filter entries by topicId in memory (more reliable than GSI)
+      if (result.Items) {
+        const topicEntries = result.Items.filter(item => item.topicId === topicId);
+        console.log(`🔍 Filtered to ${topicEntries.length} entries for topic: ${topicId}`);
         
-        console.log(`✅ GSI query successful, found ${result.Items?.length || 0} entries`);
-        
-        // Add small delay to help with GSI consistency
-        if (result.Items && result.Items.length === 0) {
-          console.log(`⚠️ GSI returned 0 entries, waiting 100ms for consistency...`);
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        if (result.Items) {
-          for (const encryptedEntry of result.Items) {
-            try {
-              const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
-              const entry: DiaryEntry = {
-                id: `${encryptedEntry.userId}-${encryptedEntry.entryId}`, // Reconstruct full entry ID
-                userId: encryptedEntry.userId,
-                entryId: encryptedEntry.entryId,
-                topicId: encryptedEntry.topicId,
-                title: decryptedData.title,
-                content: decryptedData.content,
-                wordCount: encryptedEntry.wordCount,
-                createdAt: encryptedEntry.createdAt,
-                updatedAt: encryptedEntry.updatedAt,
-              };
-              entries.push(entry);
-            } catch (error) {
-              console.error(`❌ Failed to decrypt entry ${encryptedEntry.entryId}:`, error);
-              // Skip corrupted entries
-            }
+        // Process the filtered entries
+        for (const encryptedEntry of topicEntries) {
+          try {
+            const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
+            const entry: DiaryEntry = {
+              id: `${encryptedEntry.userId}-${encryptedEntry.entryId}`, // Reconstruct full entry ID
+              userId: encryptedEntry.userId,
+              entryId: encryptedEntry.entryId,
+              topicId: encryptedEntry.topicId,
+              title: decryptedData.title,
+              content: decryptedData.content,
+              wordCount: encryptedEntry.wordCount,
+              createdAt: encryptedEntry.createdAt,
+              updatedAt: encryptedEntry.updatedAt,
+            };
+            entries.push(entry);
+          } catch (error) {
+            console.error(`❌ Failed to decrypt entry ${encryptedEntry.entryId}:`, error);
+            // Skip corrupted entries
           }
         }
         
-      } catch (_error) {
-        console.log(`⚠️ GSI query failed, falling back to scan method`);
-        
-        // Fallback: query all entries by userId and filter by topicId
-        const result = await docClient.send(new QueryCommand({
-          TableName: ENTRIES_TABLE,
-          KeyConditionExpression: 'userId = :userId',
-          ExpressionAttributeValues: {
-            ':userId': userId,
-          },
-        }));
-        
-        if (result.Items) {
-          for (const encryptedEntry of result.Items) {
-            if (encryptedEntry.topicId === topicId) {
-              try {
-                const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
-                const entry: DiaryEntry = {
-                  id: `${encryptedEntry.userId}-${encryptedEntry.entryId}`, // Reconstruct full entry ID
-                  userId: encryptedEntry.userId,
-                  entryId: encryptedEntry.entryId,
-                  topicId: encryptedEntry.topicId,
-                  title: decryptedData.title,
-                  content: decryptedData.content,
-                  wordCount: encryptedEntry.wordCount,
-                  createdAt: encryptedEntry.createdAt,
-                  updatedAt: encryptedEntry.updatedAt,
-                };
-                entries.push(entry);
-              } catch (error) {
-                console.error(`❌ Failed to decrypt entry ${encryptedEntry.entryId}:`, error);
-                // Skip corrupted entries
-              }
-            }
-          }
-        }
+        // Return early since we've processed the entries
+        console.log(`✅ Successfully processed ${entries.length} entries for topic: ${topicId}`);
+        return entries;
       }
     } else {
       // Get all entries for the user
