@@ -461,4 +461,3 @@ export const ensureUserEncryption = async (userId: string): Promise<string> => {
     throw new Error('Failed to ensure user encryption');
   }
 };
-

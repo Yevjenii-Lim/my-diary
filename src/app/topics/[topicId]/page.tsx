@@ -59,11 +59,11 @@ export default function TopicPage({ params }: TopicPageProps) {
   const [editTopicTitle, setEditTopicTitle] = useState('');
   const [editTopicDescription, setEditTopicDescription] = useState('');
   const [isUpdatingTopic, setIsUpdatingTopic] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+
 
   const topic = userTopics.find(t => t.topicId === resolvedParams.topicId);
 
-  // Fetch entries and stats with retry logic and better dependency management
+  // Fetch entries and stats - simplified without retry logic
   const fetchData = useCallback(async () => {
     if (!user || !resolvedParams.topicId) return;
     
@@ -71,7 +71,7 @@ export default function TopicPage({ params }: TopicPageProps) {
     setError(null);
     
     try {
-      console.log(`🔍 Fetching entries for topic: ${resolvedParams.topicId}, user: ${user.id}, attempt: ${retryCount + 1}`);
+      console.log(`🔍 Fetching entries for topic: ${resolvedParams.topicId}, user: ${user.id}`);
       
       const response = await fetch(`/api/entries/topic/${resolvedParams.topicId}?userId=${user.id}`);
       if (!response.ok) {
@@ -81,49 +81,24 @@ export default function TopicPage({ params }: TopicPageProps) {
       const data = await response.json();
       console.log(`✅ Fetched ${data.entries?.length || 0} entries for topic: ${resolvedParams.topicId}`);
       
-      if (data.entries && data.entries.length > 0) {
-        setEntries(data.entries);
-        setTopicStats(data.topicStats);
-        setRetryCount(0); // Reset retry count on success
-      } else if (retryCount < 2) {
-        // Progressive retry with increasing delays: 1s, 2s
-        const delay = (retryCount + 1) * 1000;
-        console.log(`⏳ No entries found, retrying in ${delay}ms... (attempt ${retryCount + 1}/3)`);
-        setTimeout(() => {
-          setRetryCount(prev => prev + 1);
-        }, delay);
-        return; // Don't set loading to false yet
-      } else {
-        // Final attempt failed, show empty state
-        setEntries([]);
-        setTopicStats(null);
-      }
+      setEntries(data.entries || []);
+      setTopicStats(data.topicStats || null);
     } catch (error) {
       console.error('Error fetching entries:', error);
       setError('Failed to load entries. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [user, resolvedParams.topicId, retryCount]);
+  }, [user, resolvedParams.topicId]);
 
   // Wait for userTopics to fully load before fetching entries
   useEffect(() => {
     if (userTopics && userTopics.length > 0) {
-      // Add a small buffer to ensure backend is ready
-      const timer = setTimeout(() => {
-        fetchData();
-      }, 300);
-      
-      return () => clearTimeout(timer);
+      fetchData();
     }
   }, [userTopics, fetchData]);
 
-  // Retry logic when retryCount changes
-  useEffect(() => {
-    if (retryCount > 0 && retryCount <= 2) {
-      fetchData();
-    }
-  }, [retryCount, fetchData]);
+
 
   // Calculate topic statistics
   const calculateTopicStats = (entries: DiaryEntry[]): TopicStats => {
