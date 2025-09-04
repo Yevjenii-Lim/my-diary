@@ -21,7 +21,7 @@ export async function GET(
     console.log(`🔐 Fetching and decrypting entry: ${entryId}`);
     
     const userEncryptionSecret = await ensureUserEncryption(userId);
-    const decryptedEntry = await getEncryptedDiaryEntry(entryId, userEncryptionSecret);
+    const decryptedEntry = await getEncryptedDiaryEntry(entryId, userId);
     
     if (!decryptedEntry) {
       return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
@@ -64,11 +64,10 @@ export async function PUT(
 
     // Update encrypted diary entry
     console.log('🔒 Updating encrypted diary entry...');
-    const updatedEntry = await updateEncryptedDiaryEntry(entryId, {
+    const updatedEntry = await updateEncryptedDiaryEntry(entryId, userId, {
       title,
       content,
-      wordCount,
-    }, userEncryptionSecret);
+    });
 
     if (!updatedEntry) {
       return NextResponse.json({ error: 'Entry not found or failed to update' }, { status: 404 });
@@ -115,7 +114,7 @@ export async function DELETE(
     const userEncryptionSecret = await ensureUserEncryption(userId);
     
     // Delete the encrypted diary entry
-    const deleteResult = await deleteEncryptedDiaryEntry(entryId);
+    const deleteResult = await deleteEncryptedDiaryEntry(entryId, userId);
     
     if (deleteResult) {
       console.log('✅ Entry deleted successfully');

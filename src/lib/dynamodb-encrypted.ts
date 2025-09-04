@@ -30,8 +30,8 @@ export const createEncryptedDiaryEntry = async (
   userEncryptionSecret: string
 ): Promise<DiaryEntry> => {
   try {
-    const timestamp = Date.now();
-    const entryId = `${userId}-${topicId}-${timestamp}`;
+    // Create simple entry ID using userId and topicId only (no timestamp)
+    const entryId = `${userId}-${topicId}`;
     const wordCount = content.trim().split(/\s+/).length;
     
     console.log(`🔐 Creating encrypted entry: ${entryId}`);
@@ -44,13 +44,13 @@ export const createEncryptedDiaryEntry = async (
     const encryptedEntry: EncryptedDiaryEntry = {
       id: entryId,
       userId,
-      entryId: `${topicId}-${timestamp}`, // Store only topicId-timestamp for simple querying
+      entryId: entryId, // Store the full userId-topicId for simple querying
       topicId,
       encryptedTitle: encryptedData.encryptedTitle,
       encryptedContent: encryptedData.encryptedContent,
       wordCount,
-      createdAt: new Date(timestamp).toISOString(),
-      updatedAt: new Date(timestamp).toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
     
     // Store in DynamoDB
@@ -82,49 +82,15 @@ export const createEncryptedDiaryEntry = async (
 
 export const getEncryptedDiaryEntry = async (
   entryId: string,
-  userEncryptionSecret: string
+  userId: string
 ): Promise<DiaryEntry | null> => {
   try {
-    // Parse the composite entryId to extract userId and actual entryId
-    // Format: userId-topicId-timestamp
-    // userId can be either:
-    // - UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
-    // - Google OAuth format: google_timestamp_random (3 parts)
-    const parts = entryId.split('-');
-    
-    let userId: string;
-    let actualEntryId: string;
-    
-    if (parts[0] === 'google') {
-      // Google OAuth user ID format: google_timestamp_random-topicId-timestamp
-      if (parts.length < 4) { // At least 4 parts: 3 for google ID + 1 for topicId + 1 for timestamp
-        console.error(`❌ Invalid Google OAuth entryId format: ${entryId}`);
-        return null;
-      }
-      userId = parts.slice(0, 3).join('-');
-      actualEntryId = parts.slice(3).join('-');
-    } else {
-      // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-topicId-timestamp
-      // UUID is always 5 parts, so we need at least 6 total parts
-      if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
-        console.error(`❌ Invalid UUID entryId format: ${entryId}`);
-        return null;
-      }
-      // For UUID, always take first 5 parts as userId, rest as actualEntryId
-      userId = parts.slice(0, 5).join('-');
-      actualEntryId = parts.slice(5).join('-');
-    }
-    
     console.log(`🔐 Fetching encrypted entry: ${entryId}`);
-    console.log(`🔍 Parsed - userId: ${userId}, actualEntryId: ${actualEntryId}`);
     
-    // Query DynamoDB using the composite key
+    // With new simple format, entryId is already userId-topicId
     const result = await docClient.send(new GetCommand({
       TableName: ENTRIES_TABLE,
-      Key: {
-        userId,
-        entryId: actualEntryId,
-      },
+      Key: { userId, entryId },
     }));
     
     if (!result.Item) {
@@ -133,6 +99,12 @@ export const getEncryptedDiaryEntry = async (
     }
     
     const encryptedEntry = result.Item as EncryptedDiaryEntry;
+    
+    // Get user encryption secret
+    const userEncryptionSecret = await getUserEncryptionSecret(userId);
+    if (!userEncryptionSecret) {
+      throw new Error('User encryption secret not found');
+    }
     
     // Decrypt the entry
     const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
@@ -159,44 +131,14 @@ export const getEncryptedDiaryEntry = async (
 
 export const updateEncryptedDiaryEntry = async (
   entryId: string,
-  updates: { title?: string; content?: string; wordCount?: number },
-  userEncryptionSecret: string
+  userId: string,
+  updates: { title?: string; content?: string }
 ): Promise<DiaryEntry | null> => {
   try {
-    // Parse the composite entryId
-    // Format: userId-topicId-timestamp
-    // userId can be either:
-    // - UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
-    // - Google OAuth format: google_timestamp_random (3 parts)
-    const parts = entryId.split('-');
-    
-    let userId: string;
-    let actualEntryId: string;
-    
-    if (parts[0] === 'google') {
-      // Google OAuth user ID format: google_timestamp_random-topicId-timestamp
-      if (parts.length < 4) { // At least 4 parts: 3 for google ID + 1 for topicId + 1 for timestamp
-        console.error(`❌ Invalid Google OAuth entryId format: ${entryId}`);
-        return null;
-      }
-      userId = parts.slice(0, 3).join('-');
-      actualEntryId = parts.slice(3).join('-');
-    } else {
-      // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-topicId-timestamp
-      // UUID is always 5 parts, so we need at least 6 total parts
-      if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
-        console.error(`❌ Invalid UUID entryId format: ${entryId}`);
-        return null;
-      }
-      // For UUID, always take first 5 parts as userId, rest as actualEntryId
-      userId = parts.slice(0, 5).join('-');
-      actualEntryId = parts.slice(5).join('-');
-    }
-    
     console.log(`🔐 Updating encrypted entry: ${entryId}`);
     
     // Get the current entry to merge updates
-    const currentEntry = await getEncryptedDiaryEntry(entryId, userEncryptionSecret);
+    const currentEntry = await getEncryptedDiaryEntry(entryId, userId);
     if (!currentEntry) {
       console.error(`❌ Entry not found for update: ${entryId}`);
       return null;
@@ -205,7 +147,12 @@ export const updateEncryptedDiaryEntry = async (
     // Merge updates
     const updatedTitle = updates.title || currentEntry.title;
     const updatedContent = updates.content || currentEntry.content;
-    const updatedWordCount = updates.wordCount || currentEntry.wordCount;
+    
+    // Get user encryption secret
+    const userEncryptionSecret = await getUserEncryptionSecret(userId);
+    if (!userEncryptionSecret) {
+      throw new Error('User encryption secret not found');
+    }
     
     // Re-encrypt the updated data
     const encryptedData = encryptDiaryEntry(updatedContent, updatedTitle, userId, userEncryptionSecret);
@@ -213,15 +160,11 @@ export const updateEncryptedDiaryEntry = async (
     // Update in DynamoDB
     await docClient.send(new UpdateCommand({
       TableName: ENTRIES_TABLE,
-      Key: {
-        userId,
-        entryId: actualEntryId,
-      },
-      UpdateExpression: 'SET encryptedTitle = :encryptedTitle, encryptedContent = :encryptedContent, wordCount = :wordCount, updatedAt = :updatedAt',
+      Key: { userId, entryId },
+      UpdateExpression: 'SET encryptedTitle = :encryptedTitle, encryptedContent = :encryptedContent, updatedAt = :updatedAt',
       ExpressionAttributeValues: {
         ':encryptedTitle': encryptedData.encryptedTitle,
         ':encryptedContent': encryptedData.encryptedContent,
-        ':wordCount': updatedWordCount,
         ':updatedAt': new Date().toISOString(),
       },
     }));
@@ -231,11 +174,11 @@ export const updateEncryptedDiaryEntry = async (
     return {
       id: entryId,
       userId,
-      entryId: actualEntryId,
+      entryId: entryId,
       topicId: currentEntry.topicId,
       title: updatedTitle,
       content: updatedContent,
-      wordCount: updatedWordCount,
+      wordCount: updatedContent.trim().split(/\s+/).length,
       createdAt: currentEntry.createdAt,
       updatedAt: new Date().toISOString(),
     };
@@ -246,54 +189,20 @@ export const updateEncryptedDiaryEntry = async (
   }
 };
 
-export const deleteEncryptedDiaryEntry = async (entryId: string): Promise<boolean> => {
+export const deleteEncryptedDiaryEntry = async (entryId: string, userId: string): Promise<boolean> => {
   try {
-    // Parse the composite entryId
-    // Format: userId-topicId-timestamp
-    // userId can be either:
-    // - UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
-    // - Google OAuth format: google_timestamp_random (3 parts)
-    const parts = entryId.split('-');
-    
-    let userId: string;
-    let actualEntryId: string;
-    
-    if (parts[0] === 'google') {
-      // Google OAuth user ID format: google_timestamp_random-topicId-timestamp
-      if (parts.length < 4) { // At least 4 parts: 3 for google ID + 1 for topicId + 1 for timestamp
-        console.error(`❌ Invalid Google OAuth entryId format: ${entryId}`);
-        return false;
-      }
-      userId = parts.slice(0, 3).join('-');
-      actualEntryId = parts.slice(3).join('-');
-    } else {
-      // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-topicId-timestamp
-      // UUID is always 5 parts, so we need at least 6 total parts
-      if (parts.length < 6) { // At least 6 parts: 5 for UUID + 1 for topicId + 1 for timestamp
-        console.error(`❌ Invalid UUID entryId format: ${entryId}`);
-        return false;
-      }
-      // For UUID, always take first 5 parts as userId, rest as actualEntryId
-      userId = parts.slice(0, 5).join('-');
-      actualEntryId = parts.slice(5).join('-');
-    }
-    
     console.log(`🗑️ Deleting encrypted entry: ${entryId}`);
-    console.log(`🔍 Parsed - userId: ${userId}, actualEntryId: ${actualEntryId}`);
     console.log(`🗃️ Table: ${ENTRIES_TABLE}`);
     
     // First, verify the entry exists before deleting
     try {
       const getResult = await docClient.send(new GetCommand({
         TableName: ENTRIES_TABLE,
-        Key: {
-          userId,
-          entryId: actualEntryId,
-        },
+        Key: { userId, entryId },
       }));
       
       if (!getResult.Item) {
-        console.error(`❌ Entry not found for deletion: userId=${userId}, entryId=${actualEntryId}`);
+        console.error(`❌ Entry not found for deletion: userId=${userId}, entryId=${entryId}`);
         return false;
       }
       
@@ -306,10 +215,7 @@ export const deleteEncryptedDiaryEntry = async (entryId: string): Promise<boolea
     // Now delete the entry
     await docClient.send(new DeleteCommand({
       TableName: ENTRIES_TABLE,
-      Key: {
-        userId,
-        entryId: actualEntryId,
-      },
+      Key: { userId, entryId },
     }));
     
     console.log(`✅ Encrypted entry deleted successfully: ${entryId}`);
@@ -362,7 +268,7 @@ export const getUserEncryptedEntries = async (
           try {
             const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
             const entry: DiaryEntry = {
-              id: `${encryptedEntry.userId}-${encryptedEntry.entryId}`, // Reconstruct full entry ID
+              id: encryptedEntry.entryId, // entryId already contains userId-topicId
               userId: encryptedEntry.userId,
               entryId: encryptedEntry.entryId,
               topicId: encryptedEntry.topicId,
@@ -398,7 +304,7 @@ export const getUserEncryptedEntries = async (
           try {
             const decryptedData = decryptDiaryEntry(encryptedEntry.encryptedContent, encryptedEntry.encryptedTitle, userId, userEncryptionSecret);
             const entry: DiaryEntry = {
-              id: `${encryptedEntry.userId}-${encryptedEntry.entryId}`, // Reconstruct full entry ID
+              id: encryptedEntry.entryId, // entryId already contains userId-topicId
               userId: encryptedEntry.userId,
               entryId: encryptedEntry.entryId,
               topicId: encryptedEntry.topicId,

@@ -5,13 +5,14 @@ import { createHash, randomBytes } from 'crypto';
 const encryptionKeyCache = new Map<string, string>();
 
 /**
- * Generate a new encryption secret for a user
+ * Generate a deterministic encryption secret for a user
  * This should be called when a user first signs up
+ * The key is deterministic - same userId always generates same key
  */
 export function generateUserEncryptionSecret(userId: string): string {
-  const timestamp = Date.now().toString();
-  const randomData = randomBytes(32).toString('hex');
-  const userSecret = `${userId}:${timestamp}:${randomData}`;
+  // Use only userId to generate a deterministic key
+  // This ensures the same user always gets the same encryption key
+  const userSecret = `user_${userId}_encryption_key_2024`;
   
   return userSecret;
 }
@@ -47,9 +48,9 @@ export async function getUserEncryptionSecret(userId: string): Promise<string> {
       return encryptionKeyCache.get(userId)!;
     }
     
-    // For now, generate a new secret if not found
-    // In production, this should retrieve from secure storage
-    console.warn(`⚠️ No encryption secret found for user ${userId}, generating new one`);
+    // Generate a deterministic secret if not found
+    // Since the key is deterministic, this is safe
+    console.log(`🔐 Generating deterministic encryption secret for user: ${userId}`);
     const newSecret = generateUserEncryptionSecret(userId);
     await storeUserEncryptionSecret(userId, newSecret);
     

@@ -99,11 +99,10 @@ export async function PUT(request: NextRequest) {
 
     // Update encrypted diary entry
     console.log('🔒 Updating encrypted diary entry...');
-    const updatedEntry = await updateEncryptedDiaryEntry(id, {
+    const updatedEntry = await updateEncryptedDiaryEntry(id, userId, {
       title,
       content,
-      wordCount,
-    }, userEncryptionSecret);
+    });
 
     if (!updatedEntry) {
       return NextResponse.json({ error: 'Entry not found or failed to update' }, { status: 404 });
