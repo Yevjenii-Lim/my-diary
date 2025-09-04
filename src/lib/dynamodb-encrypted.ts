@@ -347,8 +347,15 @@ export const getUserEncryptedEntries = async (
       
       // Filter entries by topicId in memory (more reliable than GSI)
       if (result.Items) {
+        // Debug: Log all entries to see what's actually stored
+        console.log(`🔍 Debug: All ${result.Items.length} entries found:`);
+        result.Items.forEach((item, index) => {
+          console.log(`  Entry ${index + 1}: userId="${item.userId}", topicId="${item.topicId}", entryId="${item.entryId}"`);
+        });
+        
         const topicEntries = result.Items.filter(item => item.topicId === topicId);
         console.log(`🔍 Filtered to ${topicEntries.length} entries for topic: ${topicId}`);
+        console.log(`🔍 Topic ID comparison: searching for "${topicId}" (type: ${typeof topicId})`);
         
         // Process the filtered entries
         for (const encryptedEntry of topicEntries) {
@@ -424,40 +431,24 @@ export const getUserEncryptedEntries = async (
 export const countUserEntries = async (userId: string, topicId?: string): Promise<number> => {
   try {
     if (topicId) {
-      // Count entries for a specific topic using GSI
-      try {
-        const result = await docClient.send(new QueryCommand({
-          TableName: ENTRIES_TABLE,
-          IndexName: 'TopicEntriesIndex',
-          KeyConditionExpression: 'topicId = :topicId',
-          FilterExpression: 'userId = :userId',
-          ExpressionAttributeValues: {
-            ':topicId': topicId,
-            ':userId': userId,
-          },
-          Select: 'COUNT',
-        }));
-        
-        console.log(`✅ Counted ${result.Count || 0} entries for topic ${topicId}`);
-        return result.Count || 0;
-      } catch (_error) {
-        console.log(`⚠️ GSI query failed for topic ${topicId}, falling back to scan method`);
-        
-        // Fallback: query all entries by userId and filter by topicId
-        const result = await docClient.send(new QueryCommand({
-          TableName: ENTRIES_TABLE,
-          KeyConditionExpression: 'userId = :userId',
-          ExpressionAttributeValues: {
-            ':userId': userId,
-          },
-          Select: 'COUNT',
-        }));
-        
-        // Note: This gives total count, not topic-specific count
-        // For exact topic count, we'd need to scan and filter, but that's expensive
-        console.log(`✅ Counted ${result.Count || 0} total entries for user (fallback method)`);
-        return result.Count || 0;
+      // Count entries for a specific topic using direct query (more reliable than GSI)
+      console.log(`🔍 Counting entries for topic: ${topicId}, user: ${userId}`);
+      
+      const result = await docClient.send(new QueryCommand({
+        TableName: ENTRIES_TABLE,
+        KeyConditionExpression: 'userId = :userId',
+        ExpressionAttributeValues: {
+          ':userId': userId,
+        },
+      }));
+      
+      if (result.Items) {
+        const topicEntries = result.Items.filter(item => item.topicId === topicId);
+        console.log(`✅ Counted ${topicEntries.length} entries for topic ${topicId}`);
+        return topicEntries.length;
       }
+      
+      return 0;
     } else {
       // Count all entries for a user
       const result = await docClient.send(new QueryCommand({
