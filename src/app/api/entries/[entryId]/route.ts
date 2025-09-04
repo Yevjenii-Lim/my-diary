@@ -111,9 +111,18 @@ export async function DELETE(
 
     console.log(`🗑️ Deleting entry: ${entryId}`);
     
+    // Get user encryption secret for secure deletion
+    const userEncryptionSecret = await ensureUserEncryption(userId);
+    
     // Delete the encrypted diary entry
-    await deleteEncryptedDiaryEntry(entryId);
-    console.log('✅ Entry deleted successfully');
+    const deleteResult = await deleteEncryptedDiaryEntry(entryId);
+    
+    if (deleteResult) {
+      console.log('✅ Entry deleted successfully');
+    } else {
+      console.log('❌ Failed to delete entry');
+      return NextResponse.json({ error: 'Failed to delete entry' }, { status: 500 });
+    }
     
     return NextResponse.json({ message: 'Entry deleted successfully' });
   } catch (error) {

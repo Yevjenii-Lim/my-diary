@@ -279,7 +279,31 @@ export const deleteEncryptedDiaryEntry = async (entryId: string): Promise<boolea
     }
     
     console.log(`🗑️ Deleting encrypted entry: ${entryId}`);
+    console.log(`🔍 Parsed - userId: ${userId}, actualEntryId: ${actualEntryId}`);
+    console.log(`🗃️ Table: ${ENTRIES_TABLE}`);
     
+    // First, verify the entry exists before deleting
+    try {
+      const getResult = await docClient.send(new GetCommand({
+        TableName: ENTRIES_TABLE,
+        Key: {
+          userId,
+          entryId: actualEntryId,
+        },
+      }));
+      
+      if (!getResult.Item) {
+        console.error(`❌ Entry not found for deletion: userId=${userId}, entryId=${actualEntryId}`);
+        return false;
+      }
+      
+      console.log(`✅ Entry found, proceeding with deletion`);
+    } catch (getError) {
+      console.error(`❌ Error checking if entry exists:`, getError);
+      return false;
+    }
+    
+    // Now delete the entry
     await docClient.send(new DeleteCommand({
       TableName: ENTRIES_TABLE,
       Key: {
