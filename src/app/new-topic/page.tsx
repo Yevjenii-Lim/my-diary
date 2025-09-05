@@ -263,21 +263,21 @@ export default function NewTopic() {
                         <span className="text-sm text-gray-600">Loading categories...</span>
                       </div>
                     ) : categories.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                         {categories.map((category) => (
                           <button
                             key={category.id}
                             type="button"
                             onClick={() => setSelectedCategory(category.id)}
-                            className={`p-3 rounded-lg border-2 transition-all text-black ${
+                            className={`p-3 sm:p-4 rounded-lg border-2 transition-all text-black ${
                               selectedCategory === category.id
                                 ? `border-blue-500 bg-blue-50`
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            <div className="flex items-center space-x-2">
-                              <span className="text-lg">{category.icon}</span>
-                              <span className="font-medium text-black">{category.name}</span>
+                            <div className="flex items-center space-x-2 sm:space-x-3">
+                              <span className="text-lg sm:text-xl">{category.icon}</span>
+                              <span className="font-medium text-black text-sm sm:text-base">{category.name}</span>
                             </div>
                           </button>
                         ))}
@@ -327,19 +327,19 @@ export default function NewTopic() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Category Icon
                       </label>
-                      <div className="grid grid-cols-10 gap-2">
+                      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 sm:gap-3">
                         {iconOptions.map((icon) => (
                           <button
                             key={icon}
                             type="button"
                             onClick={() => setNewCategoryIcon(icon)}
-                            className={`p-2 rounded-lg border-2 transition-all ${
+                            className={`p-2 sm:p-3 rounded-lg border-2 transition-all ${
                               newCategoryIcon === icon
                                 ? 'border-blue-500 bg-blue-50'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            <span className="text-lg">{icon}</span>
+                            <span className="text-lg sm:text-xl">{icon}</span>
                           </button>
                         ))}
                       </div>
@@ -350,20 +350,20 @@ export default function NewTopic() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Category Color
                       </label>
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                         {colorOptions.map((color) => (
                           <button
                             key={color.value}
                             type="button"
                             onClick={() => setNewCategoryColor(color.value)}
-                            className={`p-3 rounded-lg border-2 transition-all ${
+                            className={`p-3 sm:p-4 rounded-lg border-2 transition-all ${
                               newCategoryColor === color.value
                                 ? 'border-blue-500'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            <div className={`w-full h-6 rounded ${color.preview}`}></div>
-                            <span className="text-xs mt-1 block text-black">{color.label}</span>
+                            <div className={`w-full h-6 sm:h-8 rounded ${color.preview}`}></div>
+                            <span className="text-xs sm:text-sm mt-1 block text-black">{color.label}</span>
                           </button>
                         ))}
                       </div>

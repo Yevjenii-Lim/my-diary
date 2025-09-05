@@ -306,7 +306,10 @@ export const getUserEncryptedEntries = async (
       }
     }
     
-    console.log(`✅ Successfully decrypted ${entries.length} entries for user: ${userId}`);
+    // Sort entries by creation date (most recent first)
+    entries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    console.log(`✅ Successfully decrypted and sorted ${entries.length} entries for user: ${userId}`);
     return entries;
     
   } catch (error) {
