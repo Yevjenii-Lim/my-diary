@@ -44,7 +44,7 @@ export default function Home() {
               {isLoggedIn ? (
                 "Ready to continue your writing journey? Pick up where you left off or start something new. Your thoughts and ideas are waiting to be explored."
               ) : (
-                "A powerful writing platform designed to help you develop your writing skills and critical thinking through daily practice. Transform your thoughts into clear, meaningful prose while building a deeper understanding of yourself and the world."
+                "Simple daily writing, powered by AI insights."
               )}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
