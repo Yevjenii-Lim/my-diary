@@ -28,9 +28,13 @@ export async function DELETE(
     console.log('👤 Step 3: Deleting user from DynamoDB...');
     await deleteUser(userId);
 
-    // Step 4: Delete user from Cognito
-    console.log('🔐 Step 4: Deleting user from Cognito...');
-    await deleteCognitoUser(userId);
+    // Step 4: Delete user from Cognito (only for Cognito users, not Google OAuth users)
+    if (!userId.startsWith('google_')) {
+      console.log('🔐 Step 4: Deleting user from Cognito...');
+      await deleteCognitoUser(userId);
+    } else {
+      console.log('🔐 Step 4: Skipping Cognito deletion for Google OAuth user...');
+    }
 
     console.log(`✅ API: Successfully deleted user ${userId} and all associated data`);
     

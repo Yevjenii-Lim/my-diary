@@ -220,11 +220,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       });
 
       if (response.ok) {
-        // Clear local storage and redirect to home
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        setUser(null);
-        setUserTopics([]);
+        // Sign out from platform (Cognito + Google) and clear all data
+        logout();
+        // Redirect to home page
         window.location.href = '/';
       }
     } catch (error) {
