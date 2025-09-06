@@ -78,57 +78,7 @@ export default function Home() {
       </section>
 
     
-      {/* Features Section */}
-      <section id="features" className="py-12 sm:py-16 md:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-playfair font-bold text-gray-900 mb-3 sm:mb-4">
-              Why Choose Write-it?
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
-              Everything you need to develop your writing skills and enhance your thinking through daily practice
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            <div className="text-center p-6 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50">
-              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Writing Development</h3>
-              <p className="text-gray-600">
-                Improve your writing skills through daily practice. Express yourself clearly and develop your unique voice.
-              </p>
-            </div>
-            
-            <div className="text-center p-6 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Critical Thinking</h3>
-              <p className="text-gray-600">
-                Enhance your analytical skills through structured reflection. Learn to think more deeply and clearly.
-              </p>
-            </div>
-            
-            <div className="text-center p-6 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Personal Growth</h3>
-              <p className="text-gray-600">
-                Track your progress and see how your writing and thinking evolve over time. Build lasting habits.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+    
 
       {/* Security & Privacy Section */}
       <section id="security" className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-50 to-blue-50">

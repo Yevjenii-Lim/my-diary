@@ -36,6 +36,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Check if a topic with the same title already exists for this user
+    const existingTopics = await getUserTopics(userId);
+    const titleExists = existingTopics.some(topic => 
+      topic.title.toLowerCase().trim() === title.toLowerCase().trim()
+    );
+
+    if (titleExists) {
+      return NextResponse.json({ 
+        error: 'A topic with this title already exists. Please choose a different title.' 
+      }, { status: 409 });
+    }
+
     // Generate a unique topicId based on title and timestamp
     const timestamp = Date.now();
     const topicId = `${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${timestamp}`;

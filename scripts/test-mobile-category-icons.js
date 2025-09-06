@@ -69,3 +69,4 @@ function testMobileCategoryIcons() {
 
 // Run the test
 testMobileCategoryIcons();
+

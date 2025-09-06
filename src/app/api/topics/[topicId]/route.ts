@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { deleteUserTopic, updateUserTopic } from '@/lib/dynamodb';
-import { getUserEncryptedEntries } from '@/lib/dynamodb-encrypted';
+import { getUserEncryptedEntries, deleteEncryptedDiaryEntry } from '@/lib/dynamodb-encrypted';
 import { getUserEncryptionSecret } from '@/lib/encryption-keys';
 
 export async function DELETE(
@@ -27,17 +27,17 @@ export async function DELETE(
       
       // Delete all entries for this topic
       for (const entry of entries) {
-        // Note: You might want to implement a deleteEncryptedDiaryEntry function
-        // For now, we'll rely on DynamoDB's cascade delete if configured
-        console.log(`🗑️ Entry ${entry.id} will be deleted with topic ${topicId}`);
+        console.log(`🗑️ Deleting entry ${entry.id} for topic ${topicId}`);
+        await deleteEncryptedDiaryEntry(entry.id, userId);
       }
+      console.log(`✅ Deleted ${entries.length} entries for topic ${topicId}`);
     } catch (error) {
-      console.error('Error fetching entries for deletion:', error);
+      console.error('Error fetching or deleting entries for topic:', error);
       // Continue with topic deletion even if entry cleanup fails
     }
 
     // Delete the topic
-    await deleteUserTopic(userId, topicId);
+    await deleteUserTopic(topicId, userId);
 
     return NextResponse.json({ message: 'Topic deleted successfully' });
   } catch (error) {

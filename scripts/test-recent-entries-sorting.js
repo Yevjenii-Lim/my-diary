@@ -61,3 +61,4 @@ function testRecentEntriesSorting() {
 
 // Run the test
 testRecentEntriesSorting();
+

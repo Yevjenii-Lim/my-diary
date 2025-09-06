@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/contexts/UserContext';
 import Header from '@/components/Header';
+import { useToastContext } from '@/components/ToastProvider';
 
 interface Category {
   id: string;
@@ -15,6 +16,7 @@ interface Category {
 export default function NewTopic() {
   const router = useRouter();
   const { user, refreshTopics } = useUser();
+  const { showToast } = useToastContext();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -23,8 +25,6 @@ export default function NewTopic() {
   const [newCategoryIcon, setNewCategoryIcon] = useState('📝');
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
 
@@ -74,27 +74,26 @@ export default function NewTopic() {
     e.preventDefault();
     
     if (!user) {
-      setErrorMessage('You must be logged in to create a topic');
+      showToast('You must be logged in to create a topic', 'error', 5000);
       return;
     }
 
     if (!title.trim()) {
-      setErrorMessage('Title is required');
+      showToast('Title is required', 'error', 5000);
       return;
     }
 
     if (!description.trim()) {
-      setErrorMessage('Description is required');
+      showToast('Description is required', 'error', 5000);
       return;
     }
 
     if (!selectedCategory && !newCategoryName.trim()) {
-      setErrorMessage('Please select or create a category');
+      showToast('Please select or create a category', 'error', 5000);
       return;
     }
 
     setIsSubmitting(true);
-    setErrorMessage('');
 
     try {
       const topicData = {
@@ -121,7 +120,8 @@ export default function NewTopic() {
       });
 
       if (response.ok) {
-        setSuccessMessage('✅ Topic created successfully!');
+        const successMessage = '✅ Topic created successfully!';
+        showToast(successMessage, 'success', 4000);
         setTitle('');
         setDescription('');
         setSelectedCategory('');
@@ -138,54 +138,20 @@ export default function NewTopic() {
         }, 2000);
       } else {
         const errorData = await response.json();
-        setErrorMessage(errorData.error || 'Failed to create topic');
+        const errorMessage = errorData.error || 'Failed to create topic';
+        showToast(errorMessage, 'error', 6000);
       }
     } catch (error) {
-      setErrorMessage('Failed to create topic. Please try again.');
+      const errorMessage = 'Failed to create topic. Please try again.';
+      showToast(errorMessage, 'error', 6000);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const clearMessages = () => {
-    setSuccessMessage('');
-    setErrorMessage('');
-  };
 
   return (
     <>
-      {/* Success Message */}
-      {successMessage && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white border border-green-200 rounded-lg shadow-lg p-4 max-w-md w-full mx-4">
-          <div className="flex items-center justify-between">
-            <span className="text-green-800">{successMessage}</span>
-            <button
-              onClick={clearMessages}
-              className="ml-4 text-green-600 hover:text-green-800 text-lg font-bold transition-colors"
-              aria-label="Close notification"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {errorMessage && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white border border-red-200 rounded-lg shadow-lg p-4 max-w-md w-full mx-4">
-          <div className="flex items-center justify-between">
-            <span className="text-red-800">{errorMessage}</span>
-            <button
-              onClick={clearMessages}
-              className="ml-4 text-red-600 hover:text-red-800 text-lg font-bold transition-colors"
-              aria-label="Close notification"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="min-h-screen bg-gray-50">
         <Header />
 

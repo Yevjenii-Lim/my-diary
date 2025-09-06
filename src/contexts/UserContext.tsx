@@ -169,7 +169,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
       
       if (response.ok) {
         const data = await response.json();
-        setUserTopics(data.topics);
+        
+        // Sort topics by creation date (oldest first)
+        const sortedTopics = data.topics.sort((a: UserTopic, b: UserTopic) => {
+          const dateA = new Date(a.createdAt || 0);
+          const dateB = new Date(b.createdAt || 0);
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        setUserTopics(sortedTopics);
       }
     } catch (error) {
       // Error fetching user topics
@@ -193,9 +201,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         await refreshTopics();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create topic');
       }
     } catch (error) {
-      // Error adding user topic
+      // Re-throw the error so the calling component can handle it
+      throw error;
     }
   };
 

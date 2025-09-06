@@ -53,15 +53,79 @@ export default function TopicPage({ params }: TopicPageProps) {
   const [newEntryContent, setNewEntryContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'date' | 'title' | 'length'>('date');
   const [isEditingTopic, setIsEditingTopic] = useState(false);
   const [editTopicTitle, setEditTopicTitle] = useState('');
   const [editTopicDescription, setEditTopicDescription] = useState('');
   const [isUpdatingTopic, setIsUpdatingTopic] = useState(false);
+  const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  const [isDeletingEntries, setIsDeletingEntries] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
 
   const topic = userTopics.find(t => t.topicId === resolvedParams.topicId);
+
+  // Handle entry selection
+  const handleEntrySelect = (entryId: string) => {
+    setSelectedEntries(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(entryId)) {
+        newSet.delete(entryId);
+      } else {
+        newSet.add(entryId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedEntries.size === entries.length) {
+      setSelectedEntries(new Set());
+    } else {
+      setSelectedEntries(new Set(entries.map(entry => entry.id)));
+    }
+  };
+
+  // Handle bulk delete
+  const handleBulkDelete = async () => {
+    if (!user || selectedEntries.size === 0) return;
+
+    setIsDeletingEntries(true);
+    setError(null);
+
+    try {
+      const deletePromises = Array.from(selectedEntries).map(async (entryId) => {
+        const response = await fetch(`/api/entries/${entryId}?userId=${user.id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to delete entry ${entryId}`);
+        }
+
+        return entryId;
+      });
+
+      const deletedEntryIds = await Promise.all(deletePromises);
+      console.log(`✅ Successfully deleted ${deletedEntryIds.length} entries`);
+
+      // Clear selections and refresh data
+      setSelectedEntries(new Set());
+      setShowDeleteConfirm(false);
+      setSuccessMessage(`✅ Successfully deleted ${deletedEntryIds.length} entr${deletedEntryIds.length === 1 ? 'y' : 'ies'}`);
+      
+      // Refresh the entries list
+      await fetchData();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
+
+    } catch (error) {
+      console.error('Error deleting entries:', error);
+      setError(`Failed to delete some entries. Please try again.`);
+    } finally {
+      setIsDeletingEntries(false);
+    }
+  };
 
   // Fetch entries and stats - simplified without retry logic
   const fetchData = useCallback(async () => {
@@ -97,6 +161,21 @@ export default function TopicPage({ params }: TopicPageProps) {
       fetchData();
     }
   }, [userTopics, fetchData]);
+
+  // Handle ESC key to close confirmation dialog
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showDeleteConfirm) {
+        setShowDeleteConfirm(false);
+        setSelectedEntries(new Set());
+      }
+    };
+
+    if (showDeleteConfirm) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showDeleteConfirm]);
 
 
 
@@ -313,30 +392,15 @@ export default function TopicPage({ params }: TopicPageProps) {
     }
   };
 
-  // Filter and sort entries
-  const filteredAndSortedEntries = entries
-    .filter(entry => {
-      // Safety check: ensure entry has valid title and content
-      if (!entry.title || !entry.content) {
-        console.warn('Entry missing title or content:', entry);
-        return false;
-      }
-      
-      return entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             entry.content.toLowerCase().includes(searchTerm.toLowerCase());
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'date':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case 'title':
-          return (a.title || '').localeCompare(b.title || '');
-        case 'length':
-          return (b.wordCount || 0) - (a.wordCount || 0);
-        default:
-          return 0;
-      }
-    });
+  // Show all entries (no filtering or sorting)
+  const displayEntries = entries.filter(entry => {
+    // Safety check: ensure entry has valid title and content
+    if (!entry.title || !entry.content) {
+      console.warn('Entry missing title or content:', entry);
+      return false;
+    }
+    return true;
+  });
 
   // Show loading state while data is being fetched
   if (isLoading) {
@@ -786,6 +850,19 @@ export default function TopicPage({ params }: TopicPageProps) {
                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
                 <div className="flex items-center space-x-4">
                   <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Entries ({entries.length})</h2>
+                  {displayEntries.length > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedEntries.size === displayEntries.length && displayEntries.length > 0}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <span className="text-sm text-gray-600">
+                        {selectedEntries.size > 0 ? `${selectedEntries.size} selected` : 'Select all'}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center space-x-2">
                     {!showNewEntryForm && (
                       <button
@@ -830,26 +907,98 @@ export default function TopicPage({ params }: TopicPageProps) {
                   </div>
                 </div>
               
-              {/* Search and Sort */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                <input
-                  type="text"
-                  placeholder="Search entries..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black"
-                />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black"
-                >
-                  <option value="date">Sort by Date</option>
-                  <option value="title">Sort by Title</option>
-                  <option value="length">Sort by Length</option>
-                </select>
-              </div>
             </div>
+
+            {/* Bulk Actions */}
+            {selectedEntries.size > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-blue-900">
+                      {selectedEntries.size} entr{selectedEntries.size === 1 ? 'y' : 'ies'} selected
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      disabled={isDeletingEntries}
+                      className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
+                    >
+                      {isDeletingEntries ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🗑️</span>
+                          <span>Delete Selected</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setSelectedEntries(new Set())}
+                      disabled={isDeletingEntries}
+                      className="bg-gray-600 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {showDeleteConfirm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl p-6 max-w-md w-full">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 text-xl">⚠️</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Delete Entries</h3>
+                      <p className="text-sm text-gray-600">This action cannot be undone</p>
+                    </div>
+                  </div>
+                  
+                  <p className="text-gray-700 mb-6">
+                    Are you sure you want to delete <strong>{selectedEntries.size}</strong> entr{selectedEntries.size === 1 ? 'y' : 'ies'}? 
+                    This action cannot be undone.
+                  </p>
+                  
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setSelectedEntries(new Set());
+                      }}
+                      disabled={isDeletingEntries}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={isDeletingEntries}
+                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                    >
+                      {isDeletingEntries ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🗑️</span>
+                          <span>Delete</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Entries List */}
             {isLoading ? (
@@ -864,41 +1013,49 @@ export default function TopicPage({ params }: TopicPageProps) {
               <div className="text-center py-12">
                 <p className="text-red-600">{error}</p>
               </div>
-            ) : filteredAndSortedEntries.length === 0 ? (
+            ) : displayEntries.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
                 <p className="text-gray-600 mb-4">
-                  {searchTerm ? 'No entries match your search.' : 'No entries yet for this topic.'}
+                  No entries yet for this topic.
                 </p>
-                {!searchTerm && (
-                  <button
-                    onClick={() => setShowNewEntryForm(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Write Your First Entry
-                  </button>
-                )}
+                <button
+                  onClick={() => setShowNewEntryForm(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Write Your First Entry
+                </button>
               </div>
             ) : (
               <div className="space-y-4 sm:space-y-6">
-                {filteredAndSortedEntries
+                {displayEntries
                   .filter(entry => entry && entry.id) // Filter out invalid entries
                   .map((entry) => (
                     <div key={entry.id} className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 sm:mb-4 space-y-2 sm:space-y-0">
-                        <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{entry.title}</h3>
-                        <span className="text-xs sm:text-sm text-gray-500">
-                          {new Date(entry.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-gray-700 mb-3 sm:mb-4 line-clamp-3 text-sm sm:text-base">{entry.content}</p>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs sm:text-sm text-gray-500">{entry.wordCount} words</span>
-                        <Link
-                          href={`/entries/${entry.id}`}
-                          className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium"
-                        >
-                          Read Full Entry →
-                        </Link>
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedEntries.has(entry.id)}
+                          onChange={() => handleEntrySelect(entry.id)}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mt-1 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 sm:mb-4 space-y-2 sm:space-y-0">
+                            <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{entry.title}</h3>
+                            <span className="text-xs sm:text-sm text-gray-500">
+                              {new Date(entry.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 mb-3 sm:mb-4 line-clamp-3 text-sm sm:text-base">{entry.content}</p>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs sm:text-sm text-gray-500">{entry.wordCount} words</span>
+                            <Link
+                              href={`/entries/${entry.id}`}
+                              className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium"
+                            >
+                              Read Full Entry →
+                            </Link>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -933,6 +1090,7 @@ export default function TopicPage({ params }: TopicPageProps) {
                     <option value="ru">🇷🇺 Русский</option>
                     <option value="pl">🇵🇱 Polski</option>
                     <option value="uk">🇺🇦 Українська</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
                   </select>
                   <button
                   onClick={async () => {

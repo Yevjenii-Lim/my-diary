@@ -292,7 +292,7 @@ export async function generateAISuggestions(
             role: 'system',
             content: `You are an expert writing coach and journaling specialist. Your job is to generate personalized writing prompts and suggestions for users based on their writing history and preferences.
 
-IMPORTANT: Generate the suggestion in ${language === 'en' ? 'English' : language === 'es' ? 'Spanish' : language === 'fr' ? 'French' : language === 'de' ? 'German' : language === 'ja' ? 'Japanese' : language === 'ko' ? 'Korean' : language === 'zh' ? 'Chinese' : language === 'pt' ? 'Portuguese' : language === 'it' ? 'Italian' : language === 'ru' ? 'Russian' : language === 'pl' ? 'Polish' : language === 'uk' ? 'Ukrainian' : 'English'}.
+IMPORTANT: Generate the suggestion in ${language === 'en' ? 'English' : language === 'es' ? 'Spanish' : language === 'fr' ? 'French' : language === 'de' ? 'German' : language === 'ja' ? 'Japanese' : language === 'ko' ? 'Korean' : language === 'zh' ? 'Chinese' : language === 'pt' ? 'Portuguese' : language === 'it' ? 'Italian' : language === 'ru' ? 'Russian' : language === 'pl' ? 'Polish' : language === 'uk' ? 'Ukrainian' : language === 'hi' ? 'Hindi' : 'English'}.
 
 Generate 1 high-quality writing suggestion that is:
 1. Personalized to the user's writing style and patterns

@@ -8,10 +8,12 @@ import { WritingGoal } from '@/types/goals';
 import { useUser } from '@/contexts/UserContext';
 import { UserTopic } from '@/types/database';
 import Header from '@/components/Header';
+import { useToastContext } from '@/components/ToastProvider';
 
 export default function NewEntry() {
   const router = useRouter();
   const { user, userTopics, addUserTopic, isLoading, refreshTopics } = useUser();
+  const { showToast } = useToastContext();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAvailableGoals, setShowAvailableGoals] = useState(false);
 
@@ -164,7 +166,7 @@ export default function NewEntry() {
         setDeleting(false);
         
         // Show success message
-
+        console.log('✅ Topic deleted successfully');
         
         // Refresh topics and stats immediately
         setStatsLoading(true);
@@ -172,11 +174,11 @@ export default function NewEntry() {
         fetchTopicStats();
       } else {
         const errorData = await response.json();
-
+        console.error('❌ Failed to delete topic:', errorData.error);
         setDeleting(false);
       }
     } catch (error) {
-
+      console.error('❌ Error deleting topic:', error);
       setDeleting(false);
     }
   };
@@ -222,14 +224,18 @@ export default function NewEntry() {
       // We don't need to call fetchTopicStats() here as it will be called by the useEffect
       
     } catch (error) {
-      // Show user-friendly error message instead of alert
-      
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add topic';
+      console.error('Error adding topic:', errorMessage);
       
       // Reset button on error
       if (button) {
         button.innerHTML = originalText;
         button.disabled = false;
       }
+      
+      // Show error message using toast notification
+      showToast(errorMessage, 'error', 6000);
     }
   };
 

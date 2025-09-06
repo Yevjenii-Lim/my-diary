@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { UserProvider } from "@/contexts/UserContext";
+import { ToastProvider } from "@/components/ToastProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -31,7 +32,9 @@ export default function RootLayout({
         className={`${inter.variable} ${playfair.variable} antialiased bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen`}
       >
         <UserProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </UserProvider>
       </body>
     </html>
